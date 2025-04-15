@@ -4,11 +4,14 @@ import Link from "next/link"
 import { ArrowLeft, Edit, LogOut, Trash2 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { handleLogout } from '@/app/actions/auth'
+import { handleLogout, deleteUserAccount } from '@/app/actions/auth'
+import { useState } from 'react'
 
 export default function UserSettingsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const handleLogoutClick = async () => {
     try {
@@ -27,6 +30,27 @@ export default function UserSettingsPage() {
       }
     } catch (error) {
       console.error('Error during logout:', error)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeleting(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Delete the account using server action
+        await deleteUserAccount(user.id)
+        
+        // Sign out from Supabase
+        await supabase.auth.signOut()
+        
+        // Redirect to login page
+        router.push('/login')
+      }
+    } catch (error) {
+      console.error('Error during account deletion:', error)
+      setIsDeleting(false)
     }
   }
 
@@ -86,6 +110,7 @@ export default function UserSettingsPage() {
             </p>
             <button
               type="button"
+              onClick={() => setShowDeleteConfirm(true)}
               className="inline-flex items-center rounded-md border border-red-500 bg-[#1e1e1e] px-4 py-2 text-red-500 transition-colors hover:bg-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
             >
               <Trash2 className="mr-2 h-4 w-4" />
@@ -94,6 +119,36 @@ export default function UserSettingsPage() {
           </section>
         </div>
       </main>
+
+      {/* Delete Account Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-lg border border-red-500/20 bg-[#1e1e1e] p-6 shadow-lg">
+            <h3 className="mb-4 text-xl font-semibold text-red-500">Delete Account</h3>
+            <p className="mb-6 text-[#b3b3b3]">
+              Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="rounded-md border border-[#404040] bg-[#1e1e1e] px-4 py-2 text-[#b3b3b3] transition-colors hover:bg-[#2d2d2d] hover:text-white"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                className="rounded-md bg-red-500 px-4 py-2 text-white transition-colors hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
