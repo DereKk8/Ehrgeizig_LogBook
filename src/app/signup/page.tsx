@@ -93,7 +93,7 @@ export default function SignupPage() {
           // Create user profile in the database
           const result = await createUserProfile(data.user.id, formData.email, formData.name)
           if (result.success) {
-            router.push('/user_settings/training_split_settings')
+            router.push('/login')
           } else {
             setErrors((prev) => ({ ...prev, submit: 'Failed to create user profile' }))
           }
