@@ -99,6 +99,17 @@ export default function ExerciseSetupStep() {
                         />
                       </div>
                     </div>
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-white">
+                        Notes
+                      </label>
+                      <textarea
+                        {...register(`days.${index}.exercises.${exerciseIndex}.note`)}
+                        placeholder="Add any notes about the exercise (optional)"
+                        rows={2}
+                        className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-3 text-white placeholder-[#666666] transition-colors duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] resize-none"
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
