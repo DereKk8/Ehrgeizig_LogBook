@@ -34,4 +34,27 @@ export async function createUserProfile(userId: string, email: string, userName:
     console.error('Error in createUserProfile:', error)
     throw error
   }
+}
+
+export async function updateRememberMeDevice(userId: string, rememberMe: boolean) {
+  const supabase = createAdminClient()
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update({ remember_me_device: rememberMe })
+      .eq('id', userId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw new Error(`Failed to update remember me preference: ${error.message}`)
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error in updateRememberMeDevice:', error)
+    throw error
+  }
 } 
