@@ -4,17 +4,29 @@ import Link from "next/link"
 import { ArrowLeft, Edit, LogOut, Trash2 } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { handleLogout } from '@/app/actions/auth'
 
 export default function UserSettingsPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const handleLogout = async () => {
+  const handleLogoutClick = async () => {
     try {
-      await supabase.auth.signOut()
-      router.push('/login')
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Clear remember_me_device field using server action
+        await handleLogout(user.id)
+
+        // Sign out from Supabase
+        await supabase.auth.signOut()
+        
+        // Redirect to login page
+        router.push('/login')
+      }
     } catch (error) {
-      console.error('Error logging out:', error)
+      console.error('Error during logout:', error)
     }
   }
 
@@ -54,10 +66,10 @@ export default function UserSettingsPage() {
           {/* Log Out Section */}
           <section className="rounded-lg border border-[#404040] bg-[#1e1e1e] p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-white">Account Access</h2>
-            <p className="mb-4 text-[#b3b3b3]">Log out of your account on this device.</p>
+            <p className="mb-4 text-[#b3b3b3]">Log out of your account on this device. This will clear your "Remember Me" preference.</p>
             <button
               type="button"
-              onClick={handleLogout}
+              onClick={handleLogoutClick}
               className="inline-flex items-center rounded-md bg-[#FF5733] px-4 py-2 text-white transition-colors hover:bg-[#ff8a5f] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f] focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
             >
               <LogOut className="mr-2 h-4 w-4" />

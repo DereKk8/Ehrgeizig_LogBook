@@ -57,4 +57,26 @@ export async function updateRememberMeDevice(userId: string, rememberMe: boolean
     console.error('Error in updateRememberMeDevice:', error)
     throw error
   }
+}
+
+export async function handleLogout(userId: string) {
+  const supabase = createAdminClient()
+
+  try {
+    // Clear remember_me_device field
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ remember_me_device: false })
+      .eq('id', userId)
+
+    if (updateError) {
+      console.error('Error updating remember_me_device:', updateError)
+      throw new Error(`Failed to clear remember me preference: ${updateError.message}`)
+    }
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error in handleLogout:', error)
+    throw error
+  }
 } 
