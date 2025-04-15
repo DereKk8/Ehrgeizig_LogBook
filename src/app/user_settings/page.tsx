@@ -79,8 +79,8 @@ export default function UserSettingsPage() {
             <h2 className="mb-4 text-lg font-semibold text-white">Training Split</h2>
             <p className="mb-4 text-[#b3b3b3]">Customize your weekly workout schedule and exercise preferences.</p>
             <Link
-              href="/user-settings/training-split-settings"
-              className="inline-flex items-center rounded-md border border-[#2E86AB] bg-[#1e1e1e] px-4 py-2 text-[#2E86AB] transition-colors hover:bg-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#2E86AB] focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
+              href="/user_settings/training_split_settings"
+              className="inline-flex items-center rounded-md bg-[#FF5733] px-4 py-2 text-white transition-colors hover:bg-[#ff8a5f] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f] focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit Training Split
