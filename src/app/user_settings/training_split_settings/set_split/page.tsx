@@ -12,6 +12,7 @@ import { useUser } from '@/lib/hooks/useUser'
 import SplitNameStep from './components/SplitNameStep'
 import DaySetupStep from './components/DaySetupStep'
 import ExerciseSetupStep from './components/ExerciseSetupStep'
+import ExerciseDetailsStep from './components/ExerciseDetailsStep'
 import ReviewStep from './components/ReviewStep'
 
 const DAYS = [
@@ -33,7 +34,12 @@ const exerciseSchema = z.object({
   name: z.string().min(1, 'Exercise name is required'),
   sets: z.number().min(1, 'At least 1 set is required'),
   restTimeSec: z.number().min(0, 'Rest time must be 0 or greater'),
-  note: z.string().optional()
+  note: z.string().optional(),
+  setsData: z.array(z.object({
+    reps: z.number().min(1, 'At least 1 rep is required'),
+    weight: z.number().min(0, 'Weight must be 0 or greater'),
+    note: z.string().optional()
+  }))
 })
 
 const daySchema = z.object({
@@ -59,6 +65,11 @@ type FormData = {
       sets: number
       restTimeSec: number
       note?: string
+      setsData: Array<{
+        reps: number
+        weight: number
+        note?: string
+      }>
     }>
   }>
 }
@@ -67,6 +78,7 @@ const steps = [
   { id: 'split-name', title: 'Split Name' },
   { id: 'day-setup', title: 'Day Setup' },
   { id: 'exercise-setup', title: 'Exercise Setup' },
+  { id: 'exercise-details', title: 'Exercise Details' },
   { id: 'review', title: 'Review' }
 ]
 
@@ -90,7 +102,8 @@ export default function SetSplitPage() {
           name: 'Rest',
           sets: 1,
           restTimeSec: 0,
-          note: 'Rest day - no exercises'
+          note: 'Rest day - no exercises',
+          setsData: []
         }]
       }))
     },
@@ -290,7 +303,8 @@ export default function SetSplitPage() {
           name: 'Rest',
           sets: 1,
           restTimeSec: 0,
-          note: 'Rest day - no exercises'
+          note: 'Rest day - no exercises',
+          setsData: []
         }]
       }
     } else {
@@ -363,7 +377,8 @@ export default function SetSplitPage() {
               {currentStep === 0 && <SplitNameStep />}
               {currentStep === 1 && <DaySetupStep />}
               {currentStep === 2 && <ExerciseSetupStep />}
-              {currentStep === 3 && <ReviewStep />}
+              {currentStep === 3 && <ExerciseDetailsStep />}
+              {currentStep === 4 && <ReviewStep />}
             </div>
 
             {error && (
