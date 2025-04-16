@@ -29,16 +29,18 @@ const splitNameSchema = z.object({
   splitName: z.string().min(1, 'Split name is required')
 })
 
+const exerciseSchema = z.object({
+  name: z.string().min(1, 'Exercise name is required'),
+  sets: z.number().min(1, 'At least 1 set is required'),
+  restTimeSec: z.number().min(0, 'Rest time must be 0 or greater'),
+  note: z.string().optional()
+})
+
 const daySchema = z.object({
   isRestDay: z.boolean(),
-  workoutName: z.string().optional(),
-  exerciseCount: z.number().min(0).optional(),
-  exercises: z.array(z.object({
-    name: z.string(),
-    sets: z.number().min(1),
-    restTimeSec: z.number().min(0),
-    note: z.string().optional()
-  })).optional()
+  workoutName: z.string().min(1, 'Workout name is required'),
+  exerciseCount: z.number().min(0),
+  exercises: z.array(exerciseSchema)
 })
 
 const formSchema = z.object({
@@ -46,7 +48,20 @@ const formSchema = z.object({
   days: z.array(daySchema)
 })
 
-type FormData = z.infer<typeof formSchema>
+type FormData = {
+  splitName: string
+  days: Array<{
+    isRestDay: boolean
+    workoutName: string
+    exerciseCount: number
+    exercises: Array<{
+      name: string
+      sets: number
+      restTimeSec: number
+      note?: string
+    }>
+  }>
+}
 
 const steps = [
   { id: 'split-name', title: 'Split Name' },
@@ -67,11 +82,16 @@ export default function SetSplitPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       splitName: '',
-      days: Array(7).fill(null).map(() => ({
+      days: DAYS.map(() => ({
         isRestDay: true,
-        workoutName: '',
+        workoutName: 'Rest Day',
         exerciseCount: 0,
-        exercises: []
+        exercises: [{
+          name: 'Rest',
+          sets: 1,
+          restTimeSec: 0,
+          note: 'Rest day - no exercises'
+        }]
       }))
     },
     mode: 'onChange'
@@ -159,7 +179,71 @@ export default function SetSplitPage() {
     }
   }
 
-  const onSubmit = async (data: FormData) => {
+  // Show confirmation dialog instead of direct submission
+  const handleSaveClick = async () => {
+    setError(null)
+    
+    // Get current form values
+    const formData = methods.getValues()
+    console.log('Current form values:', JSON.stringify(formData, null, 2))
+    
+    // Validate the entire form
+    const isValid = await methods.trigger()
+    console.log('Form validation result:', isValid)
+    
+    if (!isValid) {
+      const errors = methods.formState.errors
+      console.log('Validation errors:', JSON.stringify(errors, null, 2))
+      
+      const errorMessages = Object.entries(errors).map(([key, value]) => {
+        if (value.message) return value.message
+        return `${key} is invalid`
+      })
+      setError(errorMessages.join('\n'))
+      return
+    }
+
+    // Check if at least one day is a training day
+    const days = formData.days
+    const hasTrainingDay = days.some(day => !day.isRestDay)
+    
+    if (!hasTrainingDay) {
+      setError('At least one training day is required')
+      return
+    }
+
+    // Check if all training days have valid data
+    const trainingDayErrors: string[] = []
+    days.forEach((day, index) => {
+      if (!day.isRestDay) {
+        if (!day.workoutName?.trim()) {
+          trainingDayErrors.push(`${DAYS[index]}: Workout name is required`)
+        }
+        if (!day.exercises || day.exercises.length === 0) {
+          trainingDayErrors.push(`${DAYS[index]}: At least one exercise is required`)
+        } else {
+          day.exercises.forEach((exercise, exerciseIndex) => {
+            if (!exercise.name.trim()) {
+              trainingDayErrors.push(`${DAYS[index]}, Exercise ${exerciseIndex + 1}: Name is required`)
+            }
+            if (!exercise.sets || exercise.sets < 1) {
+              trainingDayErrors.push(`${DAYS[index]}, Exercise ${exerciseIndex + 1}: At least 1 set is required`)
+            }
+          })
+        }
+      }
+    })
+
+    if (trainingDayErrors.length > 0) {
+      setError(trainingDayErrors.join('\n'))
+      return
+    }
+
+    // If all validations pass, show confirmation
+    setShowConfirmation(true)
+  }
+
+  const handleConfirmSave = async () => {
     if (!user?.id) {
       setError('You must be logged in to create a split')
       return
@@ -169,7 +253,11 @@ export default function SetSplitPage() {
       setIsSubmitting(true)
       setError(null)
 
-      const result = await createSplit(data, user.id)
+      const formData = methods.getValues()
+      console.log('Submitting form data:', JSON.stringify(formData, null, 2))
+      
+      const result = await createSplit(formData, user.id)
+      console.log('Create split result:', result)
 
       if (!result.success) {
         throw new Error(result.error)
@@ -187,12 +275,35 @@ export default function SetSplitPage() {
     }
   }
 
-  // Show confirmation dialog instead of direct submission
-  const handleSaveClick = async () => {
-    const isValid = await methods.trigger()
-    if (isValid) {
-      setShowConfirmation(true)
+  // Update day type (rest/training)
+  const handleDayTypeChange = (dayIndex: number, isRestDay: boolean) => {
+    const currentDays = methods.getValues('days')
+    const updatedDays = [...currentDays]
+    
+    if (isRestDay) {
+      // Set rest day defaults
+      updatedDays[dayIndex] = {
+        isRestDay: true,
+        workoutName: 'Rest Day',
+        exerciseCount: 0,
+        exercises: [{
+          name: 'Rest',
+          sets: 1,
+          restTimeSec: 0,
+          note: 'Rest day - no exercises'
+        }]
+      }
+    } else {
+      // Clear for training day
+      updatedDays[dayIndex] = {
+        isRestDay: false,
+        workoutName: '',
+        exerciseCount: 0,
+        exercises: []
+      }
     }
+    
+    methods.setValue('days', updatedDays, { shouldValidate: true })
   }
 
   return (
@@ -284,7 +395,7 @@ export default function SetSplitPage() {
                 </button>
               ) : (
                 <button
-                  type="button" 
+                  type="button"
                   onClick={handleSaveClick}
                   disabled={isSubmitting}
                   className="inline-flex items-center rounded-md bg-[#FF5733] px-4 py-2 text-white transition-colors hover:bg-[#ff8a5f] disabled:opacity-50"
@@ -302,57 +413,57 @@ export default function SetSplitPage() {
             </div>
           </form>
         </FormProvider>
-      </main>
 
-      {/* Confirmation Dialog */}
-      {showConfirmation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-lg border border-[#404040] bg-[#1e1e1e] p-6 shadow-lg">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertCircle className="mr-2 h-5 w-5 text-[#FF5733]" />
-                <h2 className="text-xl font-bold text-white">Confirm Submission</h2>
+        {/* Confirmation Dialog */}
+        {showConfirmation && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-md rounded-lg border border-[#404040] bg-[#1e1e1e] p-6 shadow-lg">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertCircle className="mr-2 h-5 w-5 text-[#FF5733]" />
+                  <h2 className="text-xl font-bold text-white">Confirm Submission</h2>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setShowConfirmation(false)}
+                  className="rounded-full p-1 text-[#b3b3b3] hover:bg-[#2d2d2d] hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button 
-                type="button" 
-                onClick={() => setShowConfirmation(false)}
-                className="rounded-full p-1 text-[#b3b3b3] hover:bg-[#2d2d2d] hover:text-white"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <p className="mb-6 text-[#b3b3b3]">
-              Are you sure you want to save this training split? This will create a new training split with your configured exercises and sets.
-            </p>
-            
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={() => setShowConfirmation(false)}
-                className="rounded-md border border-[#404040] bg-[#1e1e1e] px-4 py-2 text-[#b3b3b3] transition-colors hover:bg-[#2d2d2d] hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => methods.handleSubmit(onSubmit)()}
-                disabled={isSubmitting}
-                className="inline-flex items-center rounded-md bg-[#FF5733] px-4 py-2 text-white transition-colors hover:bg-[#ff8a5f] disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Confirm & Save'
-                )}
-              </button>
+              
+              <p className="mb-6 text-[#b3b3b3]">
+                Are you sure you want to save this training split? This will create a new training split with your configured exercises and sets.
+              </p>
+              
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmation(false)}
+                  className="rounded-md border border-[#404040] bg-[#1e1e1e] px-4 py-2 text-[#b3b3b3] transition-colors hover:bg-[#2d2d2d] hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSave}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center rounded-md bg-[#FF5733] px-4 py-2 text-white transition-colors hover:bg-[#ff8a5f] disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Confirm & Save'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   )
 }

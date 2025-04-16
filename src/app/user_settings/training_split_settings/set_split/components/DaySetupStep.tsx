@@ -36,12 +36,22 @@ export default function DaySetupStep() {
 
   // Update a day's rest status
   const handleDayTypeChange = (dayIndex: number, isRestDay: boolean) => {
-    setValue(`days.${dayIndex}.isRestDay`, isRestDay, { shouldValidate: true })
-    
-    // Only reset values if changing to rest day
     if (isRestDay) {
-      setValue(`days.${dayIndex}.workoutName`, '')
-      setValue(`days.${dayIndex}.exerciseCount`, 0)
+      // Set rest day defaults
+      setValue(`days.${dayIndex}`, {
+        isRestDay: true,
+        workoutName: 'Rest Day',
+        exerciseCount: 0,
+        exercises: []  // Keep exercises array empty even for rest days
+      }, { shouldValidate: true })
+    } else {
+      // Clear for training day
+      setValue(`days.${dayIndex}`, {
+        isRestDay: false,
+        workoutName: '',
+        exerciseCount: 0,
+        exercises: []
+      }, { shouldValidate: true })
     }
   }
 

@@ -3,114 +3,83 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
-type Exercise = {
-  name: string
-  sets: number
-  restTimeSec: number
-  note?: string
-  setsData?: Array<{
-    reps: number
-    weight: number
+type FormData = {
+  splitName: string
+  days: Array<{
+    isRestDay: boolean
+    workoutName: string
+    exerciseCount: number
+    exercises: Array<{
+      name: string
+      sets: number
+      restTimeSec: number
+      note?: string
+    }>
   }>
 }
 
-type Day = {
-  isRestDay: boolean
-  workoutName?: string
-  exerciseCount?: number
-  exercises?: Exercise[]
-}
-
-type SplitData = {
-  splitName: string
-  days: Day[]
-}
-
-export async function createSplit(splitData: SplitData, userId: string) {
-  const supabase = createAdminClient()
+export async function createSplit(data: FormData, userId: string) {
+  const supabase = await createAdminClient()
 
   try {
-    // Start a transaction
+    // Create the split
     const { data: split, error: splitError } = await supabase
       .from('splits')
       .insert({
-        name: splitData.splitName,
-        user_id: userId
+        user_id: userId,
+        name: data.splitName
       })
       .select()
       .single()
 
-    if (splitError) throw new Error(`Error creating split: ${splitError.message}`)
-    if (!split) throw new Error('Split was not created')
+    if (splitError) {
+      console.error('Error creating split:', splitError)
+      throw new Error(`Failed to create split: ${splitError.message}`)
+    }
 
-    // Insert days and exercises
-    for (let dayIndex = 0; dayIndex < splitData.days.length; dayIndex++) {
-      const day = splitData.days[dayIndex]
+    if (!split) {
+      throw new Error('Split was not created')
+    }
+
+    // Create split days and exercises
+    for (let dayIndex = 0; dayIndex < data.days.length; dayIndex++) {
+      const day = data.days[dayIndex]
       
-      // Insert split day
-      const { data: splitDay, error: dayError } = await supabase
+      // Create split day (both rest and training days)
+      const { data: splitDay, error: splitDayError } = await supabase
         .from('split_days')
         .insert({
           split_id: split.id,
           day_of_week: dayIndex,
-          workout_name: day.isRestDay ? null : day.workoutName,
-          is_rest_day: day.isRestDay
+          name: day.workoutName
         })
         .select()
         .single()
 
-      if (dayError) throw new Error(`Error creating day ${dayIndex}: ${dayError.message}`)
-      if (!splitDay) throw new Error(`Day ${dayIndex} was not created`)
+      if (splitDayError) {
+        console.error('Error creating split day:', splitDayError)
+        throw new Error(`Failed to create split day: ${splitDayError.message}`)
+      }
 
-      // If it's a training day, insert exercises
-      if (!day.isRestDay && day.exercises) {
-        for (const exercise of day.exercises) {
-          // Insert exercise
-          const { data: exerciseData, error: exerciseError } = await supabase
-            .from('exercises')
-            .insert({
-              split_day_id: splitDay.id,
-              name: exercise.name,
-              default_sets: exercise.sets,
-              rest_time_sec: exercise.restTimeSec,
-              note: exercise.note || null
-            })
-            .select()
-            .single()
+      if (!splitDay) {
+        throw new Error(`Split day ${dayIndex} was not created`)
+      }
 
-          if (exerciseError) throw new Error(`Error creating exercise: ${exerciseError.message}`)
-          if (!exerciseData) throw new Error('Exercise was not created')
+      // Create exercises for this day
+      for (const exercise of day.exercises) {
+        const { error: exerciseError } = await supabase
+          .from('exercises')
+          .insert({
+            split_day_id: splitDay.id,
+            name: exercise.name,
+            default_sets: exercise.sets,
+            rest_time_sec: exercise.restTimeSec,
+            note: exercise.note
+          })
 
-          // Create baseline session (Session #0)
-          const { data: session, error: sessionError } = await supabase
-            .from('sessions')
-            .insert({
-              user_id: userId,
-              split_day_id: splitDay.id,
-              date: null // null date indicates this is a reference session
-            })
-            .select()
-            .single()
-
-          if (sessionError) throw new Error(`Error creating session: ${sessionError.message}`)
-          if (!session) throw new Error('Session was not created')
-
-          // Insert baseline sets if setsData is provided
-          if (exercise.setsData) {
-            const setsToInsert = exercise.setsData.map((setData, setIndex) => ({
-              session_id: session.id,
-              exercise_id: exerciseData.id,
-              set_number: setIndex + 1,
-              weight: setData.weight,
-              reps: setData.reps
-            }))
-
-            const { error: setsError } = await supabase
-              .from('sets')
-              .insert(setsToInsert)
-
-            if (setsError) throw new Error(`Error creating sets: ${setsError.message}`)
-          }
+        if (exerciseError) {
+          console.error('Error creating exercise:', exerciseError)
+          throw new Error(`Failed to create exercise: ${exerciseError.message}`)
         }
       }
     }
@@ -121,7 +90,7 @@ export async function createSplit(splitData: SplitData, userId: string) {
     console.error('Error in createSplit:', error)
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'An unknown error occurred' 
+      error: error instanceof Error ? error.message : 'An error occurred while creating the split'
     }
   }
 } 
