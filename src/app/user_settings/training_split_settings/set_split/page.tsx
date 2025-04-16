@@ -14,6 +14,7 @@ import DaySetupStep from './components/DaySetupStep'
 import ExerciseSetupStep from './components/ExerciseSetupStep'
 import ExerciseDetailsStep from './components/ExerciseDetailsStep'
 import ReviewStep from './components/ReviewStep'
+import SuccessConfirmation from './components/SuccessConfirmation'
 
 const DAYS = [
   'Sunday',
@@ -54,7 +55,8 @@ const formSchema = z.object({
   days: z.array(daySchema)
 })
 
-type FormData = {
+// Export type for use in SuccessConfirmation component
+export type FormData = {
   splitName: string
   days: Array<{
     isRestDay: boolean
@@ -87,6 +89,9 @@ export default function SetSplitPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [allDaysConfigured, setAllDaysConfigured] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [submittedData, setSubmittedData] = useState<FormData | null>(null)
   const router = useRouter()
   const { user } = useUser()
 
@@ -166,8 +171,12 @@ export default function SetSplitPage() {
         isValid = true
         break
       case 3:
-        // Review step - validate entire form
-        isValid = await methods.trigger()
+        // For Exercise Details step, use the allDaysConfigured state
+        isValid = allDaysConfigured
+        if (!isValid) {
+          setError('Please configure all training days before proceeding')
+          return false
+        }
         break
       default:
         isValid = true
@@ -276,13 +285,14 @@ export default function SetSplitPage() {
         throw new Error(result.error)
       }
 
-      // Redirect to the splits list page
-      router.push('/user_settings/training_split_settings')
-      router.refresh()
+      // Store submitted data and show success page instead of redirecting
+      setSubmittedData(formData)
+      setIsSubmitted(true)
+      setShowConfirmation(false)
+      
     } catch (err) {
       console.error('Error submitting form:', err)
       setError(err instanceof Error ? err.message : 'An error occurred while saving your split')
-    } finally {
       setIsSubmitting(false)
       setShowConfirmation(false)
     }
@@ -318,6 +328,11 @@ export default function SetSplitPage() {
     }
     
     methods.setValue('days', updatedDays, { shouldValidate: true })
+  }
+
+  // Show success confirmation page if submitted
+  if (isSubmitted && submittedData) {
+    return <SuccessConfirmation formData={submittedData} />;
   }
 
   return (
@@ -377,7 +392,7 @@ export default function SetSplitPage() {
               {currentStep === 0 && <SplitNameStep />}
               {currentStep === 1 && <DaySetupStep />}
               {currentStep === 2 && <ExerciseSetupStep />}
-              {currentStep === 3 && <ExerciseDetailsStep />}
+              {currentStep === 3 && <ExerciseDetailsStep onAllDaysConfigured={setAllDaysConfigured} />}
               {currentStep === 4 && <ReviewStep />}
             </div>
 
@@ -403,10 +418,14 @@ export default function SetSplitPage() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  disabled={isSubmitting}
-                  className="rounded-md bg-[#FF5733] px-4 py-2 text-white transition-colors hover:bg-[#ff8a5f] disabled:opacity-50"
+                  disabled={isSubmitting || (currentStep === 3 && !allDaysConfigured)}
+                  className={`rounded-md px-4 py-2 text-white transition-colors disabled:opacity-50 ${
+                    currentStep === 3 && !allDaysConfigured 
+                      ? 'bg-gray-500 cursor-not-allowed'
+                      : 'bg-[#FF5733] hover:bg-[#ff8a5f]'
+                  }`}
                 >
-                  Next
+                  {currentStep === 3 && !allDaysConfigured ? 'Configure All Days' : 'Next'}
                 </button>
               ) : (
                 <button

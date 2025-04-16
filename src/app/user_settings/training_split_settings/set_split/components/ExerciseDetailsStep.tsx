@@ -42,7 +42,11 @@ type InputState = {
   }
 };
 
-export default function ExerciseDetailsStep() {
+type Props = {
+  onAllDaysConfigured?: (isConfigured: boolean) => void;
+}
+
+export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
   const { register, watch, setValue, getValues } = useFormContext()
   const [currentDay, setCurrentDay] = useState(0)
   const days = watch('days') as Day[]
@@ -50,6 +54,43 @@ export default function ExerciseDetailsStep() {
   
   // Track input values locally to prevent reset issues
   const [inputValues, setInputValues] = useState<InputState>({})
+  
+  // Track if all training days are configured
+  useEffect(() => {
+    // Get indices of all training days (non-rest days)
+    const trainingDayIndices = days
+      .map((day, index) => day.isRestDay ? -1 : index)
+      .filter(index => index !== -1);
+    
+    // Early exit if there are no training days
+    if (trainingDayIndices.length === 0) {
+      if (onAllDaysConfigured) {
+        onAllDaysConfigured(true); // No training days means we're done by default
+      }
+      return;
+    }
+
+    // Check if each training day has proper configuration
+    let allConfigured = true;
+    
+    for (const dayIndex of trainingDayIndices) {
+      const isComplete = checkDayCompletion(dayIndex);
+      if (!isComplete) {
+        allConfigured = false;
+        break;
+      }
+    }
+    
+    console.log('Training day configuration status:', {
+      trainingDayIndices,
+      completedDays,
+      allConfigured
+    });
+    
+    if (onAllDaysConfigured) {
+      onAllDaysConfigured(allConfigured);
+    }
+  }, [days, completedDays, onAllDaysConfigured]);
 
   // Find the first non-rest day to start with
   useEffect(() => {
@@ -133,6 +174,21 @@ export default function ExerciseDetailsStep() {
           [field]: value
         }
       }));
+
+      // Also update the form value immediately for validation, but don't validate on empty values
+      if (value !== '') {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+          setValue(
+            `days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.${field}`,
+            numValue,
+            { shouldValidate: false }
+          );
+          
+          // Check day completion on each valid input
+          setTimeout(() => checkDayCompletion(dayIndex), 0);
+        }
+      }
     }
   }
 
@@ -170,27 +226,50 @@ export default function ExerciseDetailsStep() {
   // Check if all exercises for a day have their sets configured
   const checkDayCompletion = (dayIndex: number) => {
     const day = days[dayIndex];
+    
+    // Rest days are always considered complete
     if (day.isRestDay) return true;
     
+    // Training day with no exercises is incomplete
+    if (!day.exercises || day.exercises.length === 0) {
+      if (completedDays.includes(dayIndex)) {
+        setCompletedDays(prev => prev.filter(d => d !== dayIndex));
+      }
+      return false;
+    }
+    
+    // Check if all exercises have proper set data
     let isComplete = true;
-    day.exercises.forEach(exercise => {
+    
+    for (const exercise of day.exercises) {
+      // Check if all sets are properly defined
       if (!exercise.setsData || exercise.setsData.length !== exercise.sets) {
         isComplete = false;
-      } else {
-        exercise.setsData.forEach(set => {
-          if (set.reps <= 0 || set.weight <= 0) {
-            isComplete = false;
-          }
-        });
+        break;
       }
-    });
+      
+      // Check if all sets have valid reps and weight values
+      for (const set of exercise.setsData) {
+        if (set.reps <= 0 || set.weight < 0) {
+          isComplete = false;
+          break;
+        }
+      }
+      
+      if (!isComplete) break;
+    }
 
+    // Update completed days state based on check result
     if (isComplete) {
       if (!completedDays.includes(dayIndex)) {
+        console.log(`Day ${dayIndex} (${DAYS[dayIndex]}) marked as complete`);
         setCompletedDays(prev => [...prev, dayIndex]);
       }
     } else {
-      setCompletedDays(prev => prev.filter(d => d !== dayIndex));
+      if (completedDays.includes(dayIndex)) {
+        console.log(`Day ${dayIndex} (${DAYS[dayIndex]}) marked as incomplete`);
+        setCompletedDays(prev => prev.filter(d => d !== dayIndex));
+      }
     }
     
     return isComplete;
