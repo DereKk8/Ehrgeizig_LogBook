@@ -3,6 +3,7 @@
 import { useFormContext } from 'react-hook-form'
 import { useState, useEffect } from 'react'
 import { Dumbbell, CalendarRange, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
+import React, { memo } from 'react'
 
 const DAYS = [
   'Sunday',
@@ -46,14 +47,130 @@ type Props = {
   onAllDaysConfigured?: (isConfigured: boolean) => void;
 }
 
+// Define SetItem component outside the parent component
+const SetItem = memo(({ 
+  dayIndex, 
+  exerciseIndex, 
+  setIndex,
+  register,
+  checkDayCompletion
+}: { 
+  dayIndex: number
+  exerciseIndex: number
+  setIndex: number
+  register: any
+  checkDayCompletion: (dayIndex: number) => boolean
+}) => {
+  return (
+    <div
+      className="rounded-lg border p-4 transition-all duration-300 border-[#404040] bg-[#1e1e1e] hover:border-[#FF5733]/50 hover:shadow-md hover:shadow-[#FF5733]/10"
+    >
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center">
+            <span className="text-[#FF5733] font-semibold mr-1">Set</span>
+            <span className="flex items-center justify-center h-6 w-6 rounded-full bg-[#FF5733]/10 text-[#FF5733] text-sm font-medium">{setIndex + 1}</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-white">
+            <span className="mr-2 text-[#FF5733]">•</span>Reps
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="Enter reps"
+            {...register(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.reps`, {
+              valueAsNumber: true,
+              onChange: () => setTimeout(() => checkDayCompletion(dayIndex), 0)
+            })}
+            className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-white">
+            <span className="mr-2 text-[#FF5733]">•</span>Weight
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="Enter weight"
+            {...register(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.weight`, {
+              valueAsNumber: true,
+              onChange: () => setTimeout(() => checkDayCompletion(dayIndex), 0)
+            })}
+            className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
+          />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// Define ExerciseCard component outside the parent component
+const ExerciseCard = memo(({ 
+  day, 
+  index, 
+  exerciseIndex, 
+  exercise,
+  register,
+  checkDayCompletion
+}: { 
+  day: any
+  index: number
+  exerciseIndex: number
+  exercise: any
+  register: any
+  checkDayCompletion: (dayIndex: number) => boolean
+}) => {
+  if (!exercise) return null;
+
+  return (
+    <div className="space-y-4 rounded-lg border border-[#404040] bg-gradient-to-br from-[#2d2d2d] to-[#252525] p-5 shadow-md hover:shadow-lg hover:shadow-[#FF5733]/5 transition-all duration-300">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center h-8 w-8 rounded-md bg-[#FF5733]/10 text-[#FF5733]">
+            <Dumbbell className="h-5 w-5" />
+          </div>
+          <h4 className="font-medium text-white text-lg">
+            {exercise.name || `Exercise ${exerciseIndex + 1}`}
+          </h4>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <h5 className="text-sm font-medium text-white flex items-center">
+            <span className="inline-block h-1 w-4 bg-[#FF5733] rounded-full mr-2"></span>
+            Sets Configuration
+          </h5>
+          <div className="text-sm text-[#b3b3b3] bg-[#1e1e1e] p-1.5 px-3 rounded-full">
+            {exercise.sets} set{exercise.sets !== 1 ? 's' : ''}
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          {Array.from({ length: exercise.sets }).map((_, setIndex) => (
+            <SetItem
+              key={`set-${index}-${exerciseIndex}-${setIndex}`}
+              dayIndex={index}
+              exerciseIndex={exerciseIndex}
+              setIndex={setIndex}
+              register={register}
+              checkDayCompletion={checkDayCompletion}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
   const { register, watch, setValue, getValues } = useFormContext()
   const [currentDay, setCurrentDay] = useState(0)
   const days = watch('days') as Day[]
   const [completedDays, setCompletedDays] = useState<number[]>([])
-  
-  // Track input values locally to prevent reset issues
-  const [inputValues, setInputValues] = useState<InputState>({})
   
   // Track if all training days are configured
   useEffect(() => {
@@ -111,117 +228,11 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
               weight: 0
             }))
             setValue(`days.${dayIndex}.exercises.${exerciseIndex}.setsData`, initialSets)
-            
-            // Initialize local input states
-            initialSets.forEach((_, setIndex) => {
-              const key = `${dayIndex}-${exerciseIndex}-${setIndex}`;
-              setInputValues(prev => ({
-                ...prev,
-                [key]: { reps: '0', weight: '0' }
-              }));
-            });
           }
         })
       }
     })
   }, [days, setValue])
-
-  // Initialize input state from form values
-  useEffect(() => {
-    const newInputValues: InputState = {};
-    
-    days.forEach((day, dayIndex) => {
-      if (!day.isRestDay) {
-        day.exercises.forEach((exercise, exerciseIndex) => {
-          if (exercise.setsData) {
-            exercise.setsData.forEach((set, setIndex) => {
-              const key = `${dayIndex}-${exerciseIndex}-${setIndex}`;
-              if (!inputValues[key]) {
-                newInputValues[key] = {
-                  reps: set.reps.toString(),
-                  weight: set.weight.toString()
-                };
-              }
-            });
-          }
-        });
-      }
-    });
-    
-    if (Object.keys(newInputValues).length > 0) {
-      setInputValues(prev => ({...prev, ...newInputValues}));
-    }
-  }, [days]);
-
-  // Handle input changes for reps and weight using local state
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    dayIndex: number,
-    exerciseIndex: number,
-    setIndex: number,
-    field: 'reps' | 'weight'
-  ) => {
-    const value = e.target.value;
-    const key = `${dayIndex}-${exerciseIndex}-${setIndex}`;
-    
-    // Only accept numeric inputs (and empty string)
-    if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      // Update local state first
-      setInputValues(prev => ({
-        ...prev,
-        [key]: {
-          ...prev[key],
-          [field]: value
-        }
-      }));
-
-      // Also update the form value immediately for validation, but don't validate on empty values
-      if (value !== '') {
-        const numValue = parseFloat(value);
-        if (!isNaN(numValue)) {
-          setValue(
-            `days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.${field}`,
-            numValue,
-            { shouldValidate: false }
-          );
-          
-          // Check day completion on each valid input
-          setTimeout(() => checkDayCompletion(dayIndex), 0);
-        }
-      }
-    }
-  }
-
-  // Update form value when input focus is lost
-  const handleBlur = (
-    dayIndex: number,
-    exerciseIndex: number,
-    setIndex: number,
-    field: 'reps' | 'weight'
-  ) => {
-    const key = `${dayIndex}-${exerciseIndex}-${setIndex}`;
-    const value = inputValues[key]?.[field] || '0';
-    const numValue = value === '' ? 0 : parseFloat(value);
-    
-    // Update form state with numeric value
-    setValue(
-      `days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.${field}`,
-      numValue,
-      { shouldValidate: true }
-    );
-    
-    // Ensure the input shows the proper value (avoid empty strings)
-    setInputValues(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        [field]: numValue.toString()
-      }
-    }));
-
-    // Check if day is completed
-    checkDayCompletion(dayIndex);
-  }
 
   // Check if all exercises for a day have their sets configured
   const checkDayCompletion = (dayIndex: number) => {
@@ -322,115 +333,6 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
     }
     
     return { nextTrainingDay, prevTrainingDay };
-  };
-
-  // Extract set rendering to a separate component for clarity
-  const SetItem = ({ 
-    dayIndex, 
-    exerciseIndex, 
-    setIndex
-  }: { 
-    dayIndex: number
-    exerciseIndex: number
-    setIndex: number
-  }) => {
-    const key = `${dayIndex}-${exerciseIndex}-${setIndex}`;
-    const inputState = inputValues[key] || { reps: '0', weight: '0' };
-    
-    return (
-      <div
-        className="rounded-lg border p-4 transition-all duration-300 border-[#404040] bg-[#1e1e1e] hover:border-[#FF5733]/50 hover:shadow-md hover:shadow-[#FF5733]/10"
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center">
-              <span className="text-[#FF5733] font-semibold mr-1">Set</span>
-              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-[#FF5733]/10 text-[#FF5733] text-sm font-medium">{setIndex + 1}</span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-white">
-              <span className="mr-2 text-[#FF5733]">•</span>Reps
-            </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={inputState.reps}
-              onChange={(e) => handleInputChange(e, dayIndex, exerciseIndex, setIndex, 'reps')}
-              onBlur={() => handleBlur(dayIndex, exerciseIndex, setIndex, 'reps')}
-              className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-white">
-              <span className="mr-2 text-[#FF5733]">•</span>Weight 
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={inputState.weight}
-              onChange={(e) => handleInputChange(e, dayIndex, exerciseIndex, setIndex, 'weight')}
-              onBlur={() => handleBlur(dayIndex, exerciseIndex, setIndex, 'weight')}
-              className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Extract exercise card rendering for better organization
-  const ExerciseCard = ({ 
-    day, 
-    index, 
-    exerciseIndex, 
-    exercise 
-  }: { 
-    day: any
-    index: number
-    exerciseIndex: number
-    exercise: any
-  }) => {
-    if (!exercise) return null;
-
-    return (
-      <div className="space-y-4 rounded-lg border border-[#404040] bg-gradient-to-br from-[#2d2d2d] to-[#252525] p-5 shadow-md hover:shadow-lg hover:shadow-[#FF5733]/5 transition-all duration-300">
-        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center h-8 w-8 rounded-md bg-[#FF5733]/10 text-[#FF5733]">
-              <Dumbbell className="h-5 w-5" />
-            </div>
-            <h4 className="font-medium text-white text-lg">
-              {exercise.name || `Exercise ${exerciseIndex + 1}`}
-            </h4>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-            <h5 className="text-sm font-medium text-white flex items-center">
-              <span className="inline-block h-1 w-4 bg-[#FF5733] rounded-full mr-2"></span>
-              Sets Configuration
-            </h5>
-            <div className="text-sm text-[#b3b3b3] bg-[#1e1e1e] p-1.5 px-3 rounded-full">
-              {exercise.sets} set{exercise.sets !== 1 ? 's' : ''}
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {Array.from({ length: exercise.sets }).map((_, setIndex) => (
-              <SetItem
-                key={`set-${index}-${exerciseIndex}-${setIndex}`}
-                dayIndex={index}
-                exerciseIndex={exerciseIndex}
-                setIndex={setIndex}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   const { nextTrainingDay, prevTrainingDay } = getAdjacentTrainingDays();
@@ -559,6 +461,8 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
                         index={index}
                         exerciseIndex={exerciseIndex}
                         exercise={exercise}
+                        register={register}
+                        checkDayCompletion={checkDayCompletion}
                       />
                     ))
                   ) : (
