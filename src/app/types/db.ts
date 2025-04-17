@@ -20,6 +20,7 @@ export type SplitDay = {
   split_id: string;
   day_of_week: number;
   name: string;
+  is_rest_day: boolean;
 };
 
 export type Exercise = {
@@ -29,6 +30,7 @@ export type Exercise = {
   default_sets: number;
   rest_time_sec: number;
   note?: string;
+  exercise_order: number;
 };
 
 export type Session = {
