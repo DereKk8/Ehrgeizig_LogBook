@@ -520,8 +520,8 @@ export default function LogSetStep({
       
       {/* Edit mode controls */}
       {isEditingExercise && (
-        <div className="flex items-center justify-between mt-4 p-4 rounded-lg border border-blue-500/20 bg-blue-500/10">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 p-4 rounded-lg border border-blue-500/20 bg-blue-500/10 space-y-4 sm:space-y-0">
+          <div className="flex justify-center sm:justify-start">
             <div>
               <label className="block text-xs text-blue-300">Number of sets:</label>
               <div className="flex items-center mt-1">
@@ -549,7 +549,7 @@ export default function LogSetStep({
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-center sm:justify-end space-x-2">
             <button
               onClick={handleCancelExerciseEdit}
               className="flex items-center rounded-md border border-[#606060] bg-[#404040] px-3 py-2 text-sm text-white transition-colors duration-200 hover:bg-[#505050]"
