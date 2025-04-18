@@ -519,10 +519,10 @@ export default function LogSetStep({
           className="flex items-center space-x-2 rounded-md bg-[#2d2d2d] px-4 py-2 text-white transition-colors duration-200 hover:bg-[#333333] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="h-5 w-5" />
-          <span>Previous</span>
+          <span className="hidden sm:inline">Previous</span>
         </button>
         
-        <div className="text-sm text-[#b3b3b3]">
+        <div className="text-sm text-center mx-auto sm:mx-0 text-[#b3b3b3]">
           {completedExercises.length} of {exercises.length} exercises completed
         </div>
         
@@ -532,7 +532,7 @@ export default function LogSetStep({
           disabled={currentExerciseIndex === exercises.length - 1}
           className="flex items-center space-x-2 rounded-md bg-[#2d2d2d] px-4 py-2 text-white transition-colors duration-200 hover:bg-[#333333] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span>Next</span>
+          <span className="hidden sm:inline">Next</span>
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
