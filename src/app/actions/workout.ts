@@ -110,78 +110,48 @@ export async function getMostRecentSets(exerciseId: string) {
     console.log(`Fetching most recent sets for exercise ID: ${exerciseId}`)
     const supabase = await createClient()
 
-    // First, find the most recent session for this exercise
-    const { data: sessions, error: sessionsError } = await supabase
-      .from('sessions')
-      .select('id, created_at')
-      .order('created_at', { ascending: false })
-      .limit(10)
-    
-    if (sessionsError) {
-      console.error('Error fetching sessions:', sessionsError)
-      return { success: false, error: sessionsError.message }
-    }
-
-    if (!sessions || sessions.length === 0) {
-      console.log(`No sessions found for exercise ${exerciseId}`)
-      return { success: true, data: [] }
-    }
-
-    // Get session IDs from most recent to oldest
-    const sessionIds = sessions.map(session => session.id)
-    console.log(`Found ${sessionIds.length} recent sessions, IDs:`, sessionIds)
-
-    // Now fetch sets for this exercise from those sessions
-    const { data: sets, error: setsError } = await supabase
+    // First, fetch sessions with their timestamps and join with sets for this exercise
+    const { data: sessionsWithSets, error: joinError } = await supabase
       .from('sets')
-      .select('*')
+      .select('*, sessions:session_id(id, created_at)')
       .eq('exercise_id', exerciseId)
-      .in('session_id', sessionIds)
-      .order('session_id', { ascending: false })
-
-    if (setsError) {
-      console.error('Error fetching sets:', setsError)
-      return { success: false, error: setsError.message }
+      
+    if (joinError) {
+      console.error('Error fetching sets with sessions:', joinError)
+      return { success: false, error: joinError.message }
     }
 
-    console.log(`Found ${sets?.length || 0} sets for exercise ${exerciseId}:`, sets)
-
-    if (!sets || sets.length === 0) {
-      // No sets found for this exercise in any session
+    if (!sessionsWithSets || sessionsWithSets.length === 0) {
       console.log(`No sets found for exercise ${exerciseId} in any session`)
       return { success: true, data: [] }
     }
 
-    // Group sets by session_id
-    const setsBySession: Record<string, Array<{ reps: number, weight: number, set_number: number }>> = {}
+    console.log(`Found ${sessionsWithSets.length} sets across different sessions for exercise ${exerciseId}`)
     
-    sets.forEach((set: any) => {
-      if (!setsBySession[set.session_id]) {
-        setsBySession[set.session_id] = []
-      }
-      setsBySession[set.session_id].push({
+    // Sort sets by session creation time (most recent first)
+    sessionsWithSets.sort((a, b) => {
+      const dateA = new Date(a.sessions.created_at).getTime()
+      const dateB = new Date(b.sessions.created_at).getTime()
+      return dateB - dateA // Descending order (newest first)
+    })
+    
+    // Find the most recent session ID
+    const mostRecentSessionId = sessionsWithSets[0].session_id
+    console.log(`Most recent session ID: ${mostRecentSessionId}`)
+    
+    // Filter only sets from the most recent session
+    const mostRecentSets = sessionsWithSets
+      .filter(set => set.session_id === mostRecentSessionId)
+      .map(set => ({
         reps: set.reps,
         weight: set.weight,
         set_number: set.set_number
-      })
-    })
-
-    // Get session IDs sorted by recency
-    const sessionIdsWithSets = Object.keys(setsBySession)
-    console.log(`Sessions with sets: ${sessionIdsWithSets.length}`, sessionIdsWithSets)
-    
-    if (sessionIdsWithSets.length === 0) {
-      return { success: true, data: [] }
-    }
-
-    // Find the most recent session that has sets for this exercise
-    const mostRecentSessionId = sessionIdsWithSets[0]
-    const mostRecentSets = setsBySession[mostRecentSessionId]
+      }))
     
     // Sort by set number
     mostRecentSets.sort((a, b) => a.set_number - b.set_number)
     
-    console.log(`Returning ${mostRecentSets.length} sets from session ${mostRecentSessionId}:`, mostRecentSets)
+    console.log(`Returning ${mostRecentSets.length} sets from most recent session ${mostRecentSessionId}:`, mostRecentSets)
     return { success: true, data: mostRecentSets }
   } catch (error) {
     console.error('Error in getMostRecentSets:', error)
