@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dumbbell, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Edit, X } from 'lucide-react'
-import { ExerciseWithSets, LogSetData, logExerciseSets } from '@/app/actions/workout'
+import { Dumbbell, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Edit, X, Plus, Minus, Save, Settings } from 'lucide-react'
+import { ExerciseWithSets, LogSetData, logExerciseSets, updateExerciseDetails, ModifyWorkoutSessionData } from '@/app/actions/workout'
 import { useUser } from '@/lib/hooks/useUser'
+import ReLogHandler from './relogging/ReLogHandler'
 
 interface LogSetStepProps {
   splitDayId: string
@@ -12,6 +13,7 @@ interface LogSetStepProps {
   onExerciseCompleted: (exerciseIndex: number) => void
   onAllExercisesCompleted: () => void
   setError: (error: string | null) => void
+  onExerciseUpdated?: (updatedExercise: ExerciseWithSets, index: number) => void
 }
 
 export default function LogSetStep({
@@ -20,16 +22,24 @@ export default function LogSetStep({
   exercises,
   onExerciseCompleted,
   onAllExercisesCompleted,
-  setError
+  setError,
+  onExerciseUpdated
 }: LogSetStepProps) {
   const [loading, setLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUpdatingExercise, setIsUpdatingExercise] = useState(false)
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
   const [completedExercises, setCompletedExercises] = useState<number[]>([])
   const [setValues, setSetValues] = useState<{[key: number]: {reps: number, weight: number}[]}>({})
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
-  const [isRelogging, setIsRelogging] = useState<boolean>(false)
   const [showCompletionConfirmation, setShowCompletionConfirmation] = useState<boolean>(false)
+  const [exerciseFormValues, setExerciseFormValues] = useState({
+    name: '',
+    defaultSets: 0,
+    restTimeSec: 0,
+    note: ''
+  })
+  const [isEditingExercise, setIsEditingExercise] = useState<boolean>(false)
 
   const currentExercise = exercises[currentExerciseIndex]
   const { user } = useUser()
@@ -46,6 +56,143 @@ export default function LogSetStep({
     })
     setSetValues(initialValues)
   }, [exercises])
+  
+  // Initialize exercise form values when current exercise changes
+  useEffect(() => {
+    if (currentExercise) {
+      setExerciseFormValues({
+        name: currentExercise.name,
+        defaultSets: currentExercise.defaultSets,
+        restTimeSec: currentExercise.restTimeSec,
+        note: currentExercise.note || ''
+      })
+    }
+  }, [currentExercise, currentExerciseIndex])
+
+  // Handle exercise form input change
+  const handleExerciseFormChange = (field: string, value: string | number) => {
+    setExerciseFormValues(prev => ({
+      ...prev,
+      [field]: value
+    }))
+  }
+
+  // Toggle exercise edit mode
+  const toggleEditExercise = () => {
+    setIsEditingExercise(!isEditingExercise)
+  }
+
+  // Save exercise changes
+  const handleSaveExerciseChanges = async () => {
+    setIsUpdatingExercise(true)
+    
+    try {
+      // Create an updated set of sets if the number of sets has changed
+      let updatedSets = [...exerciseSets]
+      const currentSetsCount = exerciseSets.length
+      
+      // If we're increasing the number of sets
+      if (exerciseFormValues.defaultSets > currentSetsCount) {
+        const additionalSets = Array.from(
+          { length: exerciseFormValues.defaultSets - currentSetsCount },
+          (_, i) => ({
+            reps: 0,
+            weight: 0
+          })
+        )
+        updatedSets = [...updatedSets, ...additionalSets]
+      } 
+      // If we're decreasing the number of sets, truncate the array
+      else if (exerciseFormValues.defaultSets < currentSetsCount) {
+        updatedSets = updatedSets.slice(0, exerciseFormValues.defaultSets)
+      }
+      
+      // Update exercise details in the database
+      const result = await updateExerciseDetails({
+        exerciseId: currentExercise.id,
+        name: exerciseFormValues.name,
+        defaultSets: exerciseFormValues.defaultSets,
+        restTimeSec: exerciseFormValues.restTimeSec,
+        note: exerciseFormValues.note
+      })
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to update exercise')
+        return
+      }
+      
+      // If sets need logging due to count change and we have an active session
+      if (sessionId && exerciseFormValues.defaultSets !== currentSetsCount) {
+        const setsData: LogSetData = {
+          sessionId,
+          exerciseId: currentExercise.id,
+          sets: updatedSets.map((set, i) => ({
+            setNumber: i + 1,
+            reps: set.reps,
+            weight: set.weight
+          }))
+        }
+        
+        await logExerciseSets(setsData)
+      }
+      
+      // Update local state
+      const updatedExercise: ExerciseWithSets = {
+        ...currentExercise,
+        name: exerciseFormValues.name,
+        defaultSets: exerciseFormValues.defaultSets,
+        restTimeSec: exerciseFormValues.restTimeSec,
+        note: exerciseFormValues.note,
+        sets: updatedSets.map((set, i) => ({
+          setNumber: i + 1,
+          reps: set.reps,
+          weight: set.weight
+        }))
+      }
+      
+      // Update parent state if callback provided
+      if (onExerciseUpdated) {
+        onExerciseUpdated(updatedExercise, currentExerciseIndex)
+      }
+      
+      setToast({
+        message: 'Exercise updated successfully!',
+        type: 'success'
+      })
+      
+      // Exit edit mode
+      setIsEditingExercise(false)
+      
+      // Clear toast after 1.5 seconds
+      setTimeout(() => setToast(null), 1500)
+    } catch (error) {
+      console.error('Error updating exercise:', error)
+      setError('An error occurred while updating the exercise')
+      
+      setToast({
+        message: 'Failed to update exercise',
+        type: 'error'
+      })
+      
+      setTimeout(() => setToast(null), 3000)
+    } finally {
+      setIsUpdatingExercise(false)
+    }
+  }
+
+  // Cancel exercise edit and reset form values
+  const handleCancelExerciseEdit = () => {
+    // Reset form values to original
+    setExerciseFormValues({
+      name: currentExercise.name,
+      defaultSets: currentExercise.defaultSets,
+      restTimeSec: currentExercise.restTimeSec,
+      note: currentExercise.note || ''
+    })
+    
+    // Exit edit mode
+    setIsEditingExercise(false)
+  }
 
   // Handle input change for reps and weight
   const handleInputChange = (setIndex: number, field: 'reps' | 'weight', value: string) => {
@@ -65,38 +212,6 @@ export default function LogSetStep({
         [currentExerciseIndex]: exerciseSets
       }
     })
-  }
-
-  // Handle re-logging a completed exercise
-  const handleRelogExercise = () => {
-    setIsRelogging(true)
-  }
-
-  // Cancel re-logging and restore original values
-  const handleCancelRelog = () => {
-    // Reset to the original values for this exercise
-    const originalExercise = exercises[currentExerciseIndex]
-    const originalSets = originalExercise.sets.map(set => ({
-      reps: set.reps,
-      weight: set.weight
-    }))
-    
-    setSetValues(prev => ({
-      ...prev,
-      [currentExerciseIndex]: originalSets
-    }))
-    
-    setIsRelogging(false)
-    
-    setToast({
-      message: 'Changes cancelled',
-      type: 'success'
-    })
-
-    // Clear toast after 1.5 seconds
-    const toastTimeout = 1500
-    
-    setTimeout(() => setToast(null), toastTimeout)
   }
 
   // Submit sets for the current exercise
@@ -149,36 +264,27 @@ export default function LogSetStep({
         onExerciseCompleted(currentExerciseIndex)
       }
       
-      const messageText = isRelogging ? 'Sets updated successfully!' : 'Sets logged successfully!'
+      const messageText = 'Sets logged successfully!'
       
       setToast({
         message: messageText,
         type: 'success'
       })
       
-      // If we're re-logging, exit re-logging mode but don't advance to next exercise
-      if (isRelogging) {
-        setIsRelogging(false)
-        
+      // If all exercises are completed, show the completion confirmation
+      if (completedExercises.length === exercises.length - 1) {
         setTimeout(() => {
           setToast(null)
+          setShowCompletionConfirmation(true)
         }, 1500)
       } else {
-        // If all exercises are completed, show the completion confirmation
-        if (completedExercises.length === exercises.length - 1) {
-          setTimeout(() => {
-            setToast(null)
-            setShowCompletionConfirmation(true)
-          }, 1500)
-        } else {
-          setTimeout(() => {
-            setToast(null)
-            // Move to next exercise if there is one
-            if (currentExerciseIndex < exercises.length - 1) {
-              setCurrentExerciseIndex(currentExerciseIndex + 1)
-            }
-          }, 1500)
-        }
+        setTimeout(() => {
+          setToast(null)
+          // Move to next exercise if there is one
+          if (currentExerciseIndex < exercises.length - 1) {
+            setCurrentExerciseIndex(currentExerciseIndex + 1)
+          }
+        }, 1500)
       }
       
     } catch (error) {
@@ -186,6 +292,23 @@ export default function LogSetStep({
       setError('An error occurred while logging sets')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Set exercise sets for re-logging
+  const setExerciseSets = (index: number, sets: { reps: number, weight: number }[]) => {
+    setSetValues(prev => ({
+      ...prev,
+      [index]: sets
+    }))
+  }
+
+  // Handle sets updated from re-logging
+  const handleSetsUpdated = (exerciseIndex: number) => {
+    // If not already marked as completed, mark it
+    if (!completedExercises.includes(exerciseIndex)) {
+      setCompletedExercises(prev => [...prev, exerciseIndex])
+      onExerciseCompleted(exerciseIndex)
     }
   }
 
@@ -324,26 +447,133 @@ export default function LogSetStep({
         <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-[#FF5733]/10 text-[#FF5733] mb-4">
           <Dumbbell className="h-6 w-6" />
         </div>
-        <h2 className="text-2xl font-bold text-white">
-          {currentExercise.name}
-        </h2>
+        
+        {/* Exercise editing button */}
+        <div className="relative">
+          {!isEditingExercise ? (
+            <>
+              <h2 className="text-2xl font-bold text-white">
+                {currentExercise.name}
+              </h2>
+              <button 
+                onClick={toggleEditExercise} 
+                className="absolute top-1 right-0 text-[#b3b3b3] hover:text-white transition-colors duration-200"
+                title="Edit exercise"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+            </>
+          ) : (
+            <input
+              type="text"
+              value={exerciseFormValues.name}
+              onChange={(e) => handleExerciseFormChange('name', e.target.value)}
+              className="text-2xl font-bold text-white bg-[#404040]/50 border border-[#606060] rounded-md px-3 py-2 w-full text-center"
+              placeholder="Exercise Name"
+            />
+          )}
+        </div>
+        
         <div className="mt-2 flex items-center justify-center text-sm text-[#b3b3b3]">
-          <span className="px-2 py-1 rounded-full bg-[#404040]/50 flex items-center">
-            <Clock className="h-4 w-4 mr-1" />
-            {currentExercise.restTimeSec}s rest
-          </span>
+          {!isEditingExercise ? (
+            <span className="px-2 py-1 rounded-full bg-[#404040]/50 flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              {currentExercise.restTimeSec}s rest
+            </span>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <label className="text-xs text-[#b3b3b3]">Rest time:</label>
+              <input
+                type="number"
+                min="0"
+                value={exerciseFormValues.restTimeSec}
+                onChange={(e) => handleExerciseFormChange('restTimeSec', parseInt(e.target.value) || 0)}
+                className="w-16 bg-[#404040]/50 border border-[#606060] rounded-md px-2 py-1 text-white text-center text-sm"
+              />
+              <span>seconds</span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Exercise Note */}
-      {currentExercise.note && (
-        <div className="rounded-lg border border-[#FF5733]/20 bg-[#FF5733]/5 p-4 text-white">
-          <p className="text-sm">
-            <span className="font-medium">Note:</span> {currentExercise.note}
-          </p>
+      {!isEditingExercise ? (
+        currentExercise.note && (
+          <div className="rounded-lg border border-[#FF5733]/20 bg-[#FF5733]/5 p-4 text-white">
+            <p className="text-sm">
+              <span className="font-medium">Note:</span> {currentExercise.note}
+            </p>
+          </div>
+        )
+      ) : (
+        <div className="rounded-lg border border-[#505050] bg-[#2d2d2d]/50 p-4">
+          <label className="block text-sm font-medium text-white mb-1">Note:</label>
+          <textarea
+            value={exerciseFormValues.note}
+            onChange={(e) => handleExerciseFormChange('note', e.target.value)}
+            className="w-full bg-[#404040]/50 border border-[#606060] rounded-md px-3 py-2 text-white text-sm"
+            placeholder="Add a note about this exercise (optional)"
+            rows={2}
+          />
         </div>
       )}
-
+      
+      {/* Edit mode controls */}
+      {isEditingExercise && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 p-4 rounded-lg border border-blue-500/20 bg-blue-500/10 space-y-4 sm:space-y-0">
+          <div className="flex justify-center sm:justify-start">
+            <div>
+              <label className="block text-xs text-blue-300">Number of sets:</label>
+              <div className="flex items-center mt-1">
+                <button 
+                  onClick={() => handleExerciseFormChange('defaultSets', Math.max(1, exerciseFormValues.defaultSets - 1))}
+                  className="bg-[#404040] rounded-l-md p-1 text-white hover:bg-[#505050]"
+                  disabled={exerciseFormValues.defaultSets <= 1}
+                >
+                  <Minus className="h-5 w-5" />
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  value={exerciseFormValues.defaultSets}
+                  onChange={(e) => handleExerciseFormChange('defaultSets', Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-12 bg-[#404040] border-y border-[#606060] py-1 text-white text-center text-sm"
+                />
+                <button 
+                  onClick={() => handleExerciseFormChange('defaultSets', exerciseFormValues.defaultSets + 1)}
+                  className="bg-[#404040] rounded-r-md p-1 text-white hover:bg-[#505050]"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center sm:justify-end space-x-2">
+            <button
+              onClick={handleCancelExerciseEdit}
+              className="flex items-center rounded-md border border-[#606060] bg-[#404040] px-3 py-2 text-sm text-white transition-colors duration-200 hover:bg-[#505050]"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancel
+            </button>
+            
+            <button
+              onClick={handleSaveExerciseChanges}
+              disabled={isUpdatingExercise}
+              className="flex items-center rounded-md bg-blue-500 px-3 py-2 text-sm text-white transition-colors duration-200 hover:bg-blue-600"
+            >
+              {isUpdatingExercise ? (
+                <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-white border-r-transparent mr-1" />
+              ) : (
+                <Save className="h-4 w-4 mr-1" />
+              )}
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Progress Indicator */}
       <div className="flex items-center justify-center space-x-2 text-sm text-[#b3b3b3]">
         <span>Exercise</span>
@@ -410,9 +640,9 @@ export default function LogSetStep({
                     inputMode="numeric"
                     value={currentSet.reps || ''}
                     onChange={(e) => handleInputChange(setIndex, 'reps', e.target.value)}
-                    disabled={isExerciseCompleted && !isRelogging}
+                    disabled={isExerciseCompleted}
                     className={`w-full rounded bg-[#404040] px-3 py-2 text-center text-white placeholder-[#666666] ${
-                      isExerciseCompleted && !isRelogging
+                      isExerciseCompleted
                         ? 'opacity-75 cursor-not-allowed border border-green-500/20' 
                         : ''
                     }`}
@@ -426,9 +656,9 @@ export default function LogSetStep({
                       inputMode="decimal"
                       value={currentSet.weight || ''}
                       onChange={(e) => handleInputChange(setIndex, 'weight', e.target.value)}
-                      disabled={isExerciseCompleted && !isRelogging}
+                      disabled={isExerciseCompleted}
                       className={`w-full rounded bg-[#404040] px-3 py-2 text-center text-white placeholder-[#666666] ${
-                        isExerciseCompleted && !isRelogging
+                        isExerciseCompleted
                           ? 'opacity-75 cursor-not-allowed border border-green-500/20' 
                           : ''
                       }`}
@@ -443,70 +673,35 @@ export default function LogSetStep({
         </div>
         
         {/* Log Button */}
-        <div className="flex items-center justify-center">
-          <button
-            type="button"
-            onClick={handleLogSets}
-            disabled={isSaving || (isExerciseCompleted && !isRelogging)}
-            className={`w-full rounded-lg py-3 font-medium transition-colors duration-200 flex items-center justify-center ${
-              isExerciseCompleted && !isRelogging
-                ? 'bg-green-500 text-white cursor-not-allowed'
-                : isRelogging
-                  ? 'bg-blue-500 text-white hover:bg-blue-600'
-                  : 'bg-[#FF5733] text-white hover:bg-[#e64a2e]'
-            }`}
-          >
-            {isSaving ? (
-              <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-solid border-white border-r-transparent" />
-            ) : isExerciseCompleted && !isRelogging ? (
-              <>
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Sets Logged
-              </>
-            ) : isRelogging ? (
-              'Update Sets'
-            ) : (
-              'Log All Sets'
-            )}
-          </button>
-        </div>
-
-        {/* Re-log button */}
-        {isExerciseCompleted && !isRelogging && (
-          <div className="mt-4 flex items-center justify-center space-x-4">
+        {!isExerciseCompleted && (
+          <div className="flex items-center justify-center">
             <button
               type="button"
-              onClick={handleRelogExercise}
-              className="flex items-center space-x-2 rounded-md border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white transition-colors duration-200 hover:bg-[#333333]"
+              onClick={handleLogSets}
+              disabled={isSaving}
+              className="w-full rounded-lg py-3 font-medium transition-colors duration-200 flex items-center justify-center bg-[#FF5733] text-white hover:bg-[#e64a2e]"
             >
-              <Edit className="h-5 w-5 mr-1" />
-              <span>Re-log Exercise</span>
+              {isSaving ? (
+                <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-solid border-white border-r-transparent" />
+              ) : (
+                'Log All Sets'
+              )}
             </button>
           </div>
         )}
-
-        {/* Re-logging mode controls */}
-        {isRelogging && (
-          <div className="mt-4 flex items-center justify-center space-x-4">
-            <button
-              type="button"
-              onClick={handleCancelRelog}
-              className="flex items-center space-x-2 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2 text-red-400 transition-colors duration-200 hover:bg-red-500/20"
-            >
-              <X className="h-5 w-5 mr-1" />
-              <span>Cancel</span>
-            </button>
-          </div>
-        )}
-
-        {/* Re-logging mode indicator */}
-        {isRelogging && (
-          <div className="mt-4 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-sm text-blue-400">
-            <div className="flex items-center">
-              <Edit className="h-4 w-4 mr-2 flex-shrink-0" />
-              <p>Re-logging Mode: You can now edit previously logged sets for this exercise. Make your changes and tap "Update Sets" to save them.</p>
-            </div>
-          </div>
+        
+        {/* Use the ReLogHandler for completed exercises */}
+        {isExerciseCompleted && (
+          <ReLogHandler
+            sessionId={sessionId}
+            currentExercise={currentExercise}
+            currentExerciseIndex={currentExerciseIndex}
+            isExerciseCompleted={isExerciseCompleted}
+            exerciseSets={exerciseSets}
+            setExerciseSets={setExerciseSets}
+            onSetsUpdated={handleSetsUpdated}
+            setError={setError}
+          />
         )}
       </div>
 

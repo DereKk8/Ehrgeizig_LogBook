@@ -325,3 +325,104 @@ export async function logExerciseSets(data: LogSetData) {
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
+
+// Type for updating exercise details
+export type UpdateExerciseData = {
+  exerciseId: string;
+  name?: string;
+  defaultSets?: number;
+  restTimeSec?: number;
+  note?: string;
+}
+
+// Function to update exercise details during an active session
+export async function updateExerciseDetails(data: UpdateExerciseData) {
+  try {
+    const supabase = await createClient()
+    
+    const { exerciseId, name, defaultSets, restTimeSec, note } = data
+    
+    // Build the update object with only the fields that are provided
+    const updateData: Record<string, any> = {}
+    if (name !== undefined) updateData.name = name
+    if (defaultSets !== undefined) updateData.default_sets = defaultSets
+    if (restTimeSec !== undefined) updateData.rest_time_sec = restTimeSec
+    if (note !== undefined) updateData.note = note
+    
+    // Don't proceed if no fields to update
+    if (Object.keys(updateData).length === 0) {
+      return { success: false, error: 'No fields to update' }
+    }
+    
+    // Update the exercise
+    const { data: updatedExercise, error } = await supabase
+      .from('exercises')
+      .update(updateData)
+      .eq('id', exerciseId)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating exercise:', error)
+      return { success: false, error: error.message }
+    }
+    
+    revalidatePath('/workout')
+    return { success: true, data: updatedExercise }
+  } catch (error) {
+    console.error('Error in updateExerciseDetails:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
+  }
+}
+
+// Type for modifying workout sessions
+export type ModifyWorkoutSessionData = {
+  sessionId: string;
+  exerciseWithSetsUpdates: {
+    exercise: UpdateExerciseData;
+    sets?: Array<{
+      setNumber: number;
+      reps: number;
+      weight: number;
+    }>;
+  }
+}
+
+// Function to modify workout session (both exercise details and sets)
+export async function modifyWorkoutSession(data: ModifyWorkoutSessionData) {
+  try {
+    const { sessionId, exerciseWithSetsUpdates } = data
+    const { exercise, sets } = exerciseWithSetsUpdates
+    
+    // Update the exercise details first
+    const exerciseUpdateResult = await updateExerciseDetails(exercise)
+    
+    if (!exerciseUpdateResult.success) {
+      return exerciseUpdateResult
+    }
+    
+    // If sets are provided, update them too
+    if (sets && sets.length > 0) {
+      const logSetsResult = await logExerciseSets({
+        sessionId,
+        exerciseId: exercise.exerciseId,
+        sets
+      })
+      
+      if (!logSetsResult.success) {
+        return logSetsResult
+      }
+    }
+    
+    return { 
+      success: true, 
+      data: { 
+        exercise: exerciseUpdateResult.data,
+        message: 'Workout session modified successfully' 
+      } 
+    }
+  } catch (error) {
+    console.error('Error in modifyWorkoutSession:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
+  }
+}
