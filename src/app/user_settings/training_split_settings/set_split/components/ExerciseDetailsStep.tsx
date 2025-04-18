@@ -53,14 +53,30 @@ const SetItem = memo(({
   exerciseIndex, 
   setIndex,
   register,
+  watch,
+  setValue,
   checkDayCompletion
 }: { 
   dayIndex: number
   exerciseIndex: number
   setIndex: number
   register: any
+  watch: any
+  setValue: any
   checkDayCompletion: (dayIndex: number) => boolean
 }) => {
+  // Get current values
+  const repsValue = watch(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.reps`);
+  const weightValue = watch(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.weight`);
+  
+  // Helper function to handle input change
+  const handleInputChange = (field: string, value: string) => {
+    // Convert to number or set to undefined if empty
+    const numValue = value === "" ? undefined : Number(value);
+    setValue(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.${field}`, numValue);
+    setTimeout(() => checkDayCompletion(dayIndex), 0);
+  };
+
   return (
     <div
       className="rounded-lg border p-4 transition-all duration-300 border-[#404040] bg-[#1e1e1e] hover:border-[#FF5733]/50 hover:shadow-md hover:shadow-[#FF5733]/10"
@@ -80,10 +96,8 @@ const SetItem = memo(({
             type="text"
             inputMode="numeric"
             placeholder="Enter reps"
-            {...register(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.reps`, {
-              valueAsNumber: true,
-              onChange: () => setTimeout(() => checkDayCompletion(dayIndex), 0)
-            })}
+            value={isNaN(repsValue) ? "" : repsValue || ""}
+            onChange={(e) => handleInputChange("reps", e.target.value)}
             className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
           />
         </div>
@@ -95,10 +109,8 @@ const SetItem = memo(({
             type="text"
             inputMode="decimal"
             placeholder="Enter weight"
-            {...register(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.weight`, {
-              valueAsNumber: true,
-              onChange: () => setTimeout(() => checkDayCompletion(dayIndex), 0)
-            })}
+            value={isNaN(weightValue) ? "" : weightValue || ""}
+            onChange={(e) => handleInputChange("weight", e.target.value)}
             className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
           />
         </div>
@@ -114,6 +126,8 @@ const ExerciseCard = memo(({
   exerciseIndex, 
   exercise,
   register,
+  watch,
+  setValue,
   checkDayCompletion
 }: { 
   day: any
@@ -121,6 +135,8 @@ const ExerciseCard = memo(({
   exerciseIndex: number
   exercise: any
   register: any
+  watch: any
+  setValue: any
   checkDayCompletion: (dayIndex: number) => boolean
 }) => {
   if (!exercise) return null;
@@ -157,6 +173,8 @@ const ExerciseCard = memo(({
               exerciseIndex={exerciseIndex}
               setIndex={setIndex}
               register={register}
+              watch={watch}
+              setValue={setValue}
               checkDayCompletion={checkDayCompletion}
             />
           ))}
@@ -223,9 +241,10 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
       if (!day.isRestDay) {
         day.exercises.forEach((exercise, exerciseIndex) => {
           if (!exercise.setsData || exercise.setsData.length !== exercise.sets) {
+            // Initialize sets without default values - they will be empty inputs
             const initialSets = Array.from({ length: exercise.sets }, () => ({
-              reps: 0,
-              weight: 0
+              reps: undefined,
+              weight: undefined
             }))
             setValue(`days.${dayIndex}.exercises.${exerciseIndex}.setsData`, initialSets)
           }
@@ -261,7 +280,9 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
       
       // Check if all sets have valid reps and weight values
       for (const set of exercise.setsData) {
-        if (set.reps <= 0 || set.weight < 0) {
+        // Check if reps and weight are defined and valid
+        // Allow zero weights for bodyweight exercises
+        if (!set.reps || set.reps <= 0 || set.weight === undefined || set.weight < 0) {
           isComplete = false;
           break;
         }
@@ -462,6 +483,8 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
                         exerciseIndex={exerciseIndex}
                         exercise={exercise}
                         register={register}
+                        watch={watch}
+                        setValue={setValue}
                         checkDayCompletion={checkDayCompletion}
                       />
                     ))
