@@ -91,8 +91,11 @@ export default function LogSetStep({
       message: 'Changes cancelled',
       type: 'success'
     })
+
+    // Clear toast after 1.5 seconds
+    const toastTimeout = 1500
     
-    setTimeout(() => setToast(null), 1500)
+    setTimeout(() => setToast(null), toastTimeout)
   }
 
   // Submit sets for the current exercise
