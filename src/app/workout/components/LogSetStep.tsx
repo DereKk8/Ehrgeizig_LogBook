@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dumbbell, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Dumbbell, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Edit, X } from 'lucide-react'
 import { ExerciseWithSets, LogSetData, logExerciseSets } from '@/app/actions/workout'
 import { useUser } from '@/lib/hooks/useUser'
 
@@ -28,6 +28,7 @@ export default function LogSetStep({
   const [completedExercises, setCompletedExercises] = useState<number[]>([])
   const [setValues, setSetValues] = useState<{[key: number]: {reps: number, weight: number}[]}>({})
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
+  const [isRelogging, setIsRelogging] = useState<boolean>(false)
 
   const currentExercise = exercises[currentExerciseIndex]
   const { user } = useUser()
@@ -63,6 +64,35 @@ export default function LogSetStep({
         [currentExerciseIndex]: exerciseSets
       }
     })
+  }
+
+  // Handle re-logging a completed exercise
+  const handleRelogExercise = () => {
+    setIsRelogging(true)
+  }
+
+  // Cancel re-logging and restore original values
+  const handleCancelRelog = () => {
+    // Reset to the original values for this exercise
+    const originalExercise = exercises[currentExerciseIndex]
+    const originalSets = originalExercise.sets.map(set => ({
+      reps: set.reps,
+      weight: set.weight
+    }))
+    
+    setSetValues(prev => ({
+      ...prev,
+      [currentExerciseIndex]: originalSets
+    }))
+    
+    setIsRelogging(false)
+    
+    setToast({
+      message: 'Changes cancelled',
+      type: 'success'
+    })
+    
+    setTimeout(() => setToast(null), 1500)
   }
 
   // Submit sets for the current exercise
@@ -107,31 +137,44 @@ export default function LogSetStep({
         return
       }
       
-      // Mark exercise as completed
-      setCompletedExercises(prev => [...prev, currentExerciseIndex])
+      // Mark exercise as completed if not already
+      if (!completedExercises.includes(currentExerciseIndex)) {
+        setCompletedExercises(prev => [...prev, currentExerciseIndex])
+        
+        // Call the parent callback to mark the exercise as completed
+        onExerciseCompleted(currentExerciseIndex)
+      }
+      
+      const messageText = isRelogging ? 'Sets updated successfully!' : 'Sets logged successfully!'
       
       setToast({
-        message: 'Sets logged successfully!',
+        message: messageText,
         type: 'success'
       })
       
-      // Call the parent callback to mark the exercise as completed
-      onExerciseCompleted(currentExerciseIndex)
-      
-      // If all exercises are completed, call the parent callback
-      if (completedExercises.length === exercises.length - 1) {
+      // If we're re-logging, exit re-logging mode but don't advance to next exercise
+      if (isRelogging) {
+        setIsRelogging(false)
+        
         setTimeout(() => {
-          onAllExercisesCompleted()
+          setToast(null)
+        }, 1500)
+      } else {
+        // If all exercises are completed, call the parent callback
+        if (completedExercises.length === exercises.length - 1) {
+          setTimeout(() => {
+            onAllExercisesCompleted()
+          }, 1500)
+        }
+        
+        setTimeout(() => {
+          setToast(null)
+          // Move to next exercise if there is one
+          if (currentExerciseIndex < exercises.length - 1) {
+            setCurrentExerciseIndex(currentExerciseIndex + 1)
+          }
         }, 1500)
       }
-      
-      setTimeout(() => {
-        setToast(null)
-        // Move to next exercise if there is one
-        if (currentExerciseIndex < exercises.length - 1) {
-          setCurrentExerciseIndex(currentExerciseIndex + 1)
-        }
-      }, 1500)
       
     } catch (error) {
       console.error('Error logging sets:', error)
@@ -257,10 +300,13 @@ export default function LogSetStep({
         
         <div className="space-y-3 mb-4">
           {/* Header Row */}
-          <div className="grid grid-cols-12 gap-2 px-2 text-sm text-[#b3b3b3] font-medium">
-            <div className="col-span-3">Set</div>
-            <div className="col-span-4 text-center">Reps</div>
-            <div className="col-span-5 text-center">Weight</div>
+          <div className="grid grid-cols-12 gap-4 px-2 text-sm text-[#b3b3b3] font-medium">
+            <div className="col-span-2">Set</div>
+            <div className="col-span-5 text-center">Reps</div>
+            <div className="col-span-5 text-center flex items-center justify-center">
+              <span>Weight</span>
+              <span className="ml-2 text-xs text-[#b3b3b3]">(kg/lbs)</span>
+            </div>
           </div>
           
           {/* Set Rows */}
@@ -270,14 +316,14 @@ export default function LogSetStep({
             return (
               <div 
                 key={setIndex} 
-                className={`grid grid-cols-12 gap-2 items-center p-2 rounded ${
+                className={`grid grid-cols-12 gap-4 items-center p-3 rounded ${
                   isExerciseCompleted 
                     ? 'bg-green-500/10 border border-green-500/20' 
                     : 'bg-[#1e1e1e]'
                 }`}
               >
-                <div className="col-span-3 flex items-center">
-                  <div className={`flex items-center justify-center h-6 w-6 rounded-full text-xs font-medium ${
+                <div className="col-span-2 flex items-center justify-center">
+                  <div className={`flex items-center justify-center h-7 w-7 rounded-full text-xs font-medium ${
                     isExerciseCompleted 
                       ? 'bg-green-500/20 text-green-500' 
                       : 'bg-[#FF5733]/20 text-[#FF5733]'
@@ -285,37 +331,37 @@ export default function LogSetStep({
                     {setIndex + 1}
                   </div>
                 </div>
-                <div className="col-span-4">
+                <div className="col-span-5">
                   <input
                     type="text"
                     inputMode="numeric"
                     value={currentSet.reps || ''}
                     onChange={(e) => handleInputChange(setIndex, 'reps', e.target.value)}
-                    disabled={isExerciseCompleted}
+                    disabled={isExerciseCompleted && !isRelogging}
                     className={`w-full rounded bg-[#404040] px-3 py-2 text-center text-white placeholder-[#666666] ${
-                      isExerciseCompleted 
+                      isExerciseCompleted && !isRelogging
                         ? 'opacity-75 cursor-not-allowed border border-green-500/20' 
                         : ''
                     }`}
                     placeholder="Reps"
                   />
                 </div>
-                <div className="col-span-5">
+                <div className="col-span-5 ">
                   <div className="flex items-center">
                     <input
                       type="text"
                       inputMode="decimal"
                       value={currentSet.weight || ''}
                       onChange={(e) => handleInputChange(setIndex, 'weight', e.target.value)}
-                      disabled={isExerciseCompleted}
+                      disabled={isExerciseCompleted && !isRelogging}
                       className={`w-full rounded bg-[#404040] px-3 py-2 text-center text-white placeholder-[#666666] ${
-                        isExerciseCompleted 
+                        isExerciseCompleted && !isRelogging
                           ? 'opacity-75 cursor-not-allowed border border-green-500/20' 
                           : ''
                       }`}
                       placeholder="Weight"
                     />
-                    <span className="ml-1 text-sm text-[#b3b3b3]">kg/lbs</span>
+                    <span className="ml-2 text-xs text-[#b3b3b3] whitespace-nowrap"></span>
                   </div>
                 </div>
               </div>
@@ -328,25 +374,67 @@ export default function LogSetStep({
           <button
             type="button"
             onClick={handleLogSets}
-            disabled={isSaving || isExerciseCompleted}
+            disabled={isSaving || (isExerciseCompleted && !isRelogging)}
             className={`w-full rounded-lg py-3 font-medium transition-colors duration-200 flex items-center justify-center ${
-              isExerciseCompleted
+              isExerciseCompleted && !isRelogging
                 ? 'bg-green-500 text-white cursor-not-allowed'
-                : 'bg-[#FF5733] text-white hover:bg-[#e64a2e]'
+                : isRelogging
+                  ? 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-[#FF5733] text-white hover:bg-[#e64a2e]'
             }`}
           >
             {isSaving ? (
               <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-solid border-white border-r-transparent" />
-            ) : isExerciseCompleted ? (
+            ) : isExerciseCompleted && !isRelogging ? (
               <>
                 <CheckCircle className="h-5 w-5 mr-2" />
                 Sets Logged
               </>
+            ) : isRelogging ? (
+              'Update Sets'
             ) : (
               'Log All Sets'
             )}
           </button>
         </div>
+
+        {/* Re-log button */}
+        {isExerciseCompleted && !isRelogging && (
+          <div className="mt-4 flex items-center justify-center space-x-4">
+            <button
+              type="button"
+              onClick={handleRelogExercise}
+              className="flex items-center space-x-2 rounded-md border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white transition-colors duration-200 hover:bg-[#333333]"
+            >
+              <Edit className="h-5 w-5 mr-1" />
+              <span>Re-log Exercise</span>
+            </button>
+          </div>
+        )}
+
+        {/* Re-logging mode controls */}
+        {isRelogging && (
+          <div className="mt-4 flex items-center justify-center space-x-4">
+            <button
+              type="button"
+              onClick={handleCancelRelog}
+              className="flex items-center space-x-2 rounded-md border border-red-500/30 bg-red-500/10 px-4 py-2 text-red-400 transition-colors duration-200 hover:bg-red-500/20"
+            >
+              <X className="h-5 w-5 mr-1" />
+              <span>Cancel</span>
+            </button>
+          </div>
+        )}
+
+        {/* Re-logging mode indicator */}
+        {isRelogging && (
+          <div className="mt-4 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-sm text-blue-400">
+            <div className="flex items-center">
+              <Edit className="h-4 w-4 mr-2 flex-shrink-0" />
+              <p>Re-logging Mode: You can now edit previously logged sets for this exercise. Make your changes and tap "Update Sets" to save them.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation buttons */}
