@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Activity } from 'lucide-react' // Added Lucide React icon import
 import { createClient } from '@/lib/supabase/client'
 import Spinner from '@/components/ui/spinner'
 import { validateEmail, validatePassword } from '@/lib/utils/validation'
@@ -94,11 +95,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#121212] p-4">
-      <div className="w-full max-w-md rounded-lg bg-[#1e1e1e] p-8 shadow-lg">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#121212] to-[#1a1a1a] p-4">
+      <div className="w-full max-w-md rounded-lg bg-[#1e1e1e] p-8 shadow-xl border border-[#333333]">
+        {/* Logo Section */}
+        <div className="flex flex-col items-center justify-center mb-8">
+          <div className="flex items-center justify-center mb-2">
+            <Activity className="h-10 w-10 text-[#FF5733]" />
+            <span className="ml-2 text-3xl font-bold text-white">Ehrgeizig</span>
+          </div>
+          <p className="text-[#b3b3b3] text-sm">Your Personal Fitness Journey</p>
+        </div>
+
         <div className="mb-6 text-center">
-          <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
-          <p className="mt-2 text-[#b3b3b3]">Log in to track your fitness journey</p>
+          <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
+          <p className="mt-2 text-[#b3b3b3]">Log in to continue your fitness journey</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -106,17 +116,19 @@ export default function LoginPage() {
             <label htmlFor="email" className="block text-sm font-medium text-white">
               Email
             </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`w-full rounded-md border ${
-                errors.email ? 'border-red-500' : 'border-[#404040]'
-              } bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] focus:border-[#FF5733] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f]/50`}
-              placeholder="your@email.com"
-            />
+            <div className="relative">
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full rounded-md border ${
+                  errors.email ? 'border-red-500' : 'border-[#404040]'
+                } bg-[#2d2d2d] px-4 py-3 text-white placeholder-[#666666] focus:border-[#FF5733] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f]/50`}
+                placeholder="your@email.com"
+              />
+            </div>
             {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
           </div>
 
@@ -124,31 +136,38 @@ export default function LoginPage() {
             <label htmlFor="password" className="block text-sm font-medium text-white">
               Password
             </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              className={`w-full rounded-md border ${
-                errors.password ? 'border-red-500' : 'border-[#404040]'
-              } bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] focus:border-[#FF5733] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f]/50`}
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`w-full rounded-md border ${
+                  errors.password ? 'border-red-500' : 'border-[#404040]'
+                } bg-[#2d2d2d] px-4 py-3 text-white placeholder-[#666666] focus:border-[#FF5733] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f]/50`}
+                placeholder="••••••••"
+              />
+            </div>
             {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
           </div>
 
-          <div className="flex items-center">
-            <input
-              id="remember-me"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-[#404040] text-[#FF5733] focus:ring-[#ff8a5f]"
-            />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-[#b3b3b3]">
-              Remember me on this device
-            </label>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="remember-me"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-[#404040] text-[#FF5733] focus:ring-[#ff8a5f]"
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-[#b3b3b3]">
+                Remember me
+              </label>
+            </div>
+            <Link href="#" className="text-sm font-medium text-[#FF5733] hover:text-[#ff8a5f]">
+              Forgot password?
+            </Link>
           </div>
 
           {errors.submit && (
@@ -160,15 +179,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-md bg-[#FF5733] px-4 py-2 text-white transition-colors hover:bg-[#ff8a5f] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-md bg-[#FF5733] px-4 py-3 text-white font-medium transition-all hover:bg-[#ff8a5f] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 shadow-md"
           >
-            {isLoading ? <Spinner /> : 'Log In'}
+            {isLoading ? <Spinner /> : 'Sign In'}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm">
+        <div className="mt-8 text-center text-sm">
           <span className="text-[#b3b3b3]">Don't have an account? </span>
-          <Link href="/signup" className="font-medium text-[#2E86AB] hover:text-[#FF5733]">
+          <Link href="/signup" className="font-medium text-[#FF5733] hover:text-[#ff8a5f] transition-colors">
             Sign up
           </Link>
         </div>
