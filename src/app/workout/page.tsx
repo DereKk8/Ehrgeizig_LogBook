@@ -120,6 +120,15 @@ export default function WorkoutPage() {
     }
   }
   
+  // Handle exercise update during logging
+  const handleExerciseUpdated = (updatedExercise: ExerciseWithSets, index: number) => {
+    setExerciseList(prevExercises => {
+      const updatedExercises = [...prevExercises];
+      updatedExercises[index] = updatedExercise;
+      return updatedExercises;
+    });
+  }
+  
   // Handle completion of all exercises
   const handleAllExercisesCompleted = () => {
     nextStep()
@@ -229,6 +238,7 @@ export default function WorkoutPage() {
               exercises={exerciseList}
               onExerciseCompleted={handleExerciseCompleted}
               onAllExercisesCompleted={handleAllExercisesCompleted}
+              onExerciseUpdated={handleExerciseUpdated}
               setError={setError}
             />
           )}
