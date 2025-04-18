@@ -88,8 +88,12 @@ export default function LogSetStep({
     
     try {
       // Create an updated set of sets if the number of sets has changed
-      let updatedSets = [...exerciseSets]
-      const currentSetsCount = exerciseSets.length
+      const currentSets = setValues[currentExerciseIndex] || currentExercise.sets.map(set => ({
+        reps: set.reps,
+        weight: set.weight
+      }));
+      let updatedSets = [...currentSets]
+      const currentSetsCount = currentSets.length
       
       // If we're increasing the number of sets
       if (exerciseFormValues.defaultSets > currentSetsCount) {
