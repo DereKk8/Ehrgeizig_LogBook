@@ -29,6 +29,7 @@ export default function LogSetStep({
   const [setValues, setSetValues] = useState<{[key: number]: {reps: number, weight: number}[]}>({})
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null)
   const [isRelogging, setIsRelogging] = useState<boolean>(false)
+  const [showCompletionConfirmation, setShowCompletionConfirmation] = useState<boolean>(false)
 
   const currentExercise = exercises[currentExerciseIndex]
   const { user } = useUser()
@@ -163,20 +164,21 @@ export default function LogSetStep({
           setToast(null)
         }, 1500)
       } else {
-        // If all exercises are completed, call the parent callback
+        // If all exercises are completed, show the completion confirmation
         if (completedExercises.length === exercises.length - 1) {
           setTimeout(() => {
-            onAllExercisesCompleted()
+            setToast(null)
+            setShowCompletionConfirmation(true)
+          }, 1500)
+        } else {
+          setTimeout(() => {
+            setToast(null)
+            // Move to next exercise if there is one
+            if (currentExerciseIndex < exercises.length - 1) {
+              setCurrentExerciseIndex(currentExerciseIndex + 1)
+            }
           }, 1500)
         }
-        
-        setTimeout(() => {
-          setToast(null)
-          // Move to next exercise if there is one
-          if (currentExerciseIndex < exercises.length - 1) {
-            setCurrentExerciseIndex(currentExerciseIndex + 1)
-          }
-        }, 1500)
       }
       
     } catch (error) {
@@ -201,6 +203,11 @@ export default function LogSetStep({
     }
   }
 
+  // Handle workout completion
+  const handleWorkoutCompletion = () => {
+    onAllExercisesCompleted()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -218,6 +225,69 @@ export default function LogSetStep({
         <div className="text-center">
           <AlertCircle className="h-12 w-12 mx-auto text-[#FF5733]" />
           <p className="mt-4 text-white">No exercises found</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (showCompletionConfirmation) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 space-y-6">
+        <div className="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-500/20 text-green-500 mb-2 animate-bounce">
+          <CheckCircle className="h-10 w-10" />
+        </div>
+        
+        <div className="text-center space-y-2">
+          <h2 className="text-2xl font-bold text-white">Workout Complete!</h2>
+          <p className="text-[#b3b3b3]">
+            You've successfully logged all exercises for this workout.
+          </p>
+        </div>
+        
+        <div className="bg-[#2d2d2d] rounded-lg p-6 max-w-md w-full">
+          <div className="space-y-4">
+            <div className="text-center">
+              <h3 className="text-lg font-medium text-white mb-2">Workout Summary</h3>
+              <div className="flex items-center justify-center space-x-4 text-sm">
+                <div className="bg-[#1e1e1e] rounded-lg p-3 flex flex-col items-center">
+                  <span className="text-[#FF5733] text-xl font-bold">{exercises.length}</span>
+                  <span className="text-[#b3b3b3]">Exercises</span>
+                </div>
+                <div className="bg-[#1e1e1e] rounded-lg p-3 flex flex-col items-center">
+                  <span className="text-[#FF5733] text-xl font-bold">
+                    {exercises.reduce((total, ex) => total + ex.defaultSets, 0)}
+                  </span>
+                  <span className="text-[#b3b3b3]">Sets</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border-t border-[#404040] pt-4 mt-4">
+              <p className="text-center text-sm text-[#b3b3b3] mb-4">
+                Your workout has been saved. You can view your workout history anytime.
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex flex-col md:flex-row items-center space-y-3 md:space-y-0 md:space-x-4">
+          <button
+            type="button"
+            onClick={() => setShowCompletionConfirmation(false)}
+            className="flex items-center rounded-lg border border-[#404040] bg-[#2d2d2d] px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-[#333333]"
+          >
+            <ChevronLeft className="h-5 w-5 mr-2" />
+            Return to Workout
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleWorkoutCompletion}
+            className="inline-flex items-center rounded-lg bg-green-500 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-green-600"
+          >
+            <CheckCircle className="h-5 w-5 mr-2" />
+            Finish Workout
+          </button>
         </div>
       </div>
     )
@@ -449,10 +519,10 @@ export default function LogSetStep({
           className="flex items-center space-x-2 rounded-md bg-[#2d2d2d] px-4 py-2 text-white transition-colors duration-200 hover:bg-[#333333] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronLeft className="h-5 w-5" />
-          <span>Previous</span>
+          <span className="hidden sm:inline">Previous</span>
         </button>
         
-        <div className="text-sm text-[#b3b3b3]">
+        <div className="text-sm text-center mx-auto sm:mx-0 text-[#b3b3b3]">
           {completedExercises.length} of {exercises.length} exercises completed
         </div>
         
@@ -462,24 +532,21 @@ export default function LogSetStep({
           disabled={currentExerciseIndex === exercises.length - 1}
           className="flex items-center space-x-2 rounded-md bg-[#2d2d2d] px-4 py-2 text-white transition-colors duration-200 hover:bg-[#333333] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span>Next</span>
+          <span className="hidden sm:inline">Next</span>
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
 
-      {/* Complete Exercise Button */}
-      {isExerciseCompleted && (
-        <div className="mt-4 text-center">
+      {/* Finish Workout Button */}
+      {completedExercises.length > 0 && (
+        <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={currentExerciseIndex < exercises.length - 1 ? goToNextExercise : onAllExercisesCompleted}
-            className="inline-flex items-center rounded-lg bg-green-500 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-green-600"
+            onClick={() => setShowCompletionConfirmation(true)}
+            className="flex items-center rounded-lg bg-green-500 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-green-600"
           >
-            {currentExerciseIndex < exercises.length - 1 ? (
-              <>Next Exercise</>
-            ) : (
-              <>Complete Workout</>
-            )}
+            <CheckCircle className="h-5 w-5 mr-2" />
+            Finish Workout
           </button>
         </div>
       )}
