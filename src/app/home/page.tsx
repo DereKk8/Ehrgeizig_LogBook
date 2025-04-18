@@ -93,7 +93,7 @@ export default function DashboardPage() {
             <div className="rounded-lg border border-[#404040] bg-[#1e1e1e] p-6 shadow-sm">
               <h2 className="mb-4 text-lg font-semibold text-white">Ready to Train?</h2>
               <Link
-                href="/workout/new"
+                href="/workout"
                 className="inline-flex w-full items-center justify-center rounded-md bg-[#FF5733] px-4 py-3 text-white transition-colors hover:bg-[#ff8a5f] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f] focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
               >
                 Start Workout
