@@ -250,3 +250,108 @@ export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
+
+// Type for logging sets data
+export type LogSetData = {
+  sessionId: string;
+  exerciseId: string;
+  sets: Array<{
+    setNumber: number;
+    reps: number;
+    weight: number;
+  }>;
+}
+
+// Function to create a new workout session
+export async function createWorkoutSession(splitDayId: string) {
+  try {
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    // Create a new session
+    const { data: session, error } = await supabase
+      .from('sessions')
+      .insert({
+        user_id: user.id,
+        split_day: splitDayId,
+        date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating workout session:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data: session }
+  } catch (error) {
+    console.error('Error in createWorkoutSession:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
+  }
+}
+
+// Function to log sets for an exercise
+export async function logExerciseSets(data: LogSetData) {
+  try {
+    const supabase = await createClient()
+    
+    const { sessionId, exerciseId, sets } = data
+    
+    // Check if sets already exist for this exercise in this session
+    const { data: existingSets, error: checkError } = await supabase
+      .from('sets')
+      .select('id')
+      .eq('session_id', sessionId)
+      .eq('exercise_id', exerciseId)
+    
+    if (checkError) {
+      console.error('Error checking existing sets:', checkError)
+      return { success: false, error: checkError.message }
+    }
+    
+    // If sets exist, delete them first (to replace with new values)
+    if (existingSets && existingSets.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('sets')
+        .delete()
+        .eq('session_id', sessionId)
+        .eq('exercise_id', exerciseId)
+      
+      if (deleteError) {
+        console.error('Error deleting existing sets:', deleteError)
+        return { success: false, error: deleteError.message }
+      }
+    }
+    
+    // Insert all new sets for this exercise
+    const setsToInsert = sets.map(set => ({
+      session_id: sessionId,
+      exercise_id: exerciseId,
+      set_number: set.setNumber,
+      reps: set.reps,
+      weight: set.weight
+    }))
+    
+    const { data: insertedSets, error: insertError } = await supabase
+      .from('sets')
+      .insert(setsToInsert)
+      .select()
+    
+    if (insertError) {
+      console.error('Error inserting sets:', insertError)
+      return { success: false, error: insertError.message }
+    }
+    
+    revalidatePath('/workout')
+    return { success: true, data: insertedSets }
+  } catch (error) {
+    console.error('Error in logExerciseSets:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
+  }
+}
