@@ -107,30 +107,55 @@ interface SessionSet {
 // Function to get most recent sets for a specific exercise
 export async function getMostRecentSets(exerciseId: string) {
   try {
+    console.log(`Fetching most recent sets for exercise ID: ${exerciseId}`)
     const supabase = await createClient()
 
-    // First, find the most recent session (other than session #0) that has sets for this exercise
-    const { data: sessionSets, error: sessionError } = await supabase
-      .from('sets')
-      .select('session_id, reps, weight, set_number')
-      .eq('exercise_id', exerciseId)
-      .order('session_id', { ascending: false })
-      .limit(10) // Limit to avoid fetching too many records
-
-    if (sessionError) {
-      console.error('Error fetching session sets:', sessionError)
-      return { success: false, error: sessionError.message }
+    // First, find the most recent session for this exercise
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10)
+    
+    if (sessionsError) {
+      console.error('Error fetching sessions:', sessionsError)
+      return { success: false, error: sessionsError.message }
     }
 
-    if (!sessionSets || sessionSets.length === 0) {
-      // No previous sets found, return empty array
+    if (!sessions || sessions.length === 0) {
+      console.log(`No sessions found for exercise ${exerciseId}`)
+      return { success: true, data: [] }
+    }
+
+    // Get session IDs from most recent to oldest
+    const sessionIds = sessions.map(session => session.id)
+    console.log(`Found ${sessionIds.length} recent sessions, IDs:`, sessionIds)
+
+    // Now fetch sets for this exercise from those sessions
+    const { data: sets, error: setsError } = await supabase
+      .from('sets')
+      .select('*')
+      .eq('exercise_id', exerciseId)
+      .in('session_id', sessionIds)
+      .order('session_id', { ascending: false })
+
+    if (setsError) {
+      console.error('Error fetching sets:', setsError)
+      return { success: false, error: setsError.message }
+    }
+
+    console.log(`Found ${sets?.length || 0} sets for exercise ${exerciseId}:`, sets)
+
+    if (!sets || sets.length === 0) {
+      // No sets found for this exercise in any session
+      console.log(`No sets found for exercise ${exerciseId} in any session`)
       return { success: true, data: [] }
     }
 
     // Group sets by session_id
     const setsBySession: Record<string, Array<{ reps: number, weight: number, set_number: number }>> = {}
     
-    sessionSets.forEach((set: SessionSet) => {
+    sets.forEach((set: any) => {
       if (!setsBySession[set.session_id]) {
         setsBySession[set.session_id] = []
       }
@@ -141,19 +166,22 @@ export async function getMostRecentSets(exerciseId: string) {
       })
     })
 
-    // Get the first session ID (most recent one)
-    const mostRecentSessionId = Object.keys(setsBySession)[0]
+    // Get session IDs sorted by recency
+    const sessionIdsWithSets = Object.keys(setsBySession)
+    console.log(`Sessions with sets: ${sessionIdsWithSets.length}`, sessionIdsWithSets)
     
-    if (!mostRecentSessionId) {
+    if (sessionIdsWithSets.length === 0) {
       return { success: true, data: [] }
     }
 
-    // Return the sets from the most recent session
+    // Find the most recent session that has sets for this exercise
+    const mostRecentSessionId = sessionIdsWithSets[0]
     const mostRecentSets = setsBySession[mostRecentSessionId]
     
     // Sort by set number
     mostRecentSets.sort((a, b) => a.set_number - b.set_number)
-
+    
+    console.log(`Returning ${mostRecentSets.length} sets from session ${mostRecentSessionId}:`, mostRecentSets)
     return { success: true, data: mostRecentSets }
   } catch (error) {
     console.error('Error in getMostRecentSets:', error)
@@ -164,31 +192,39 @@ export async function getMostRecentSets(exerciseId: string) {
 // Function to load split day exercises with prefilled sets
 export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
   try {
+    console.log(`Loading workout with prefilled sets for split day ID: ${splitDayId}`)
+    
     // 1. Get all exercises for the split day
     const exercisesResult = await getSplitDayExercises(splitDayId)
     
     if (!exercisesResult.success) {
+      console.error('Failed to fetch exercises for split day:', exercisesResult.error)
       return exercisesResult
     }
     
     const exercises = exercisesResult.data || []
+    console.log(`Found ${exercises.length} exercises for split day ${splitDayId}`)
+    
     const exercisesWithSets: ExerciseWithSets[] = []
     
     // 2. For each exercise, try to get most recent sets
     for (const exercise of exercises) {
+      console.log(`Processing exercise: ${exercise.name} (ID: ${exercise.id})`)
       const setsResult = await getMostRecentSets(exercise.id)
       
       let sets = []
       
       if (setsResult.success && setsResult.data && setsResult.data.length > 0) {
         // Use most recent set data
+        console.log(`Found ${setsResult.data.length} previous sets for exercise ${exercise.name}`)
         sets = setsResult.data.map((set: { set_number: number; reps: number; weight: number; }) => ({
           setNumber: set.set_number,
           reps: set.reps,
           weight: set.weight
         }))
       } else {
-        // Create default sets
+        // Create default empty sets
+        console.log(`No previous sets found for exercise ${exercise.name}. Creating ${exercise.default_sets} default sets.`)
         sets = Array.from({ length: exercise.default_sets }, (_, i) => ({
           setNumber: i + 1,
           reps: 0, // Default reps
@@ -207,6 +243,7 @@ export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
       })
     }
     
+    console.log(`Successfully processed ${exercisesWithSets.length} exercises with their sets`)
     return { success: true, data: exercisesWithSets }
   } catch (error) {
     console.error('Error in loadWorkoutWithPrefilledSets:', error)

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getSplitDays } from '@/app/actions/workout'
-import { loadWorkoutWithPrefilledSets } from '@/app/actions/workout'
+import { getSplitDays, loadWorkoutWithPrefilledSets } from '@/app/actions/workout'
 import { ExerciseWithSets } from '@/app/actions/workout'
 import { Clock, ChevronDown, Dumbbell, RotateCcw, ChevronUp } from 'lucide-react'
 import { DayOfWeek, SplitDay } from '@/app/types/db'
@@ -29,28 +28,66 @@ export default function WorkoutSummaryStep({
   const [dayDropdownOpen, setDayDropdownOpen] = useState(false)
   const [splitDays, setSplitDays] = useState<SplitDay[]>([])
   const [loading, setLoading] = useState(false)
+  const [workoutExercises, setWorkoutExercises] = useState<ExerciseWithSets[]>(exercises)
 
-  // Fetch split days for the dropdown
+  // Fetch split days for the dropdown and load initial exercises
   useEffect(() => {
-    async function fetchSplitDays() {
+    async function fetchData() {
+      setLoading(true)
+      
       try {
-        const result = await getSplitDays(splitId)
+        // Step 1: Get split days for the dropdown
+        const splitDaysResult = await getSplitDays(splitId)
         
-        if (!result.success) {
-          console.error('Error fetching split days:', result.error)
+        if (!splitDaysResult.success) {
+          console.error('Error fetching split days:', splitDaysResult.error)
+          setError(`Failed to load workout days: ${splitDaysResult.error}`)
+          setLoading(false)
           return
         }
         
         // Filter out rest days
-        const trainingDays = result.data ? result.data.filter((day: SplitDay) => !day.is_rest_day) : []
+        const trainingDays = splitDaysResult.data ? splitDaysResult.data.filter((day: SplitDay) => !day.is_rest_day) : []
         setSplitDays(trainingDays)
+        
+        // Step 2: Find the selected day from the days we just loaded
+        const selectedDay = trainingDays.find(day => day.day_of_week === selectedDayIndex)
+        
+        if (!selectedDay) {
+          console.log('No day found with index:', selectedDayIndex)
+          setLoading(false)
+          return
+        }
+        
+        // Step 3: Fetch exercises with sets for the selected day
+        console.log(`Fetching exercises for day ${selectedDay.name} (ID: ${selectedDay.id})`)
+        const exercisesResult = await loadWorkoutWithPrefilledSets(selectedDay.id)
+        
+        if (!exercisesResult.success) {
+          console.error('Error loading workout with prefilled sets:', exercisesResult.error)
+          setError(`Failed to load exercises: ${exercisesResult.error}`)
+          setLoading(false)
+          return
+        }
+        
+        console.log('Successfully loaded exercises with sets:', exercisesResult.data)
+        
+        if (exercisesResult.data && exercisesResult.data.length > 0) {
+          // Update the exercises with the ones that have prefilled sets
+          setWorkoutExercises(exercisesResult.data)
+        } else {
+          console.log('No exercises found for this day')
+        }
       } catch (error) {
-        console.error('Error in fetchSplitDays:', error)
+        console.error('Error fetching data:', error)
+        setError('Failed to load workout data')
+      } finally {
+        setLoading(false)
       }
     }
     
-    fetchSplitDays()
-  }, [splitId])
+    fetchData()
+  }, [splitId, selectedDayIndex, setError])
 
   // Handle day selection from dropdown
   const handleDaySelection = async (day: SplitDay) => {
@@ -63,6 +100,7 @@ export default function WorkoutSummaryStep({
     setError(null)
     
     try {
+      console.log(`Changing workout day to ${day.name} (day_of_week: ${day.day_of_week})`)
       onDayChanged(day.id, day.name, day.day_of_week)
     } catch (error) {
       console.error('Error changing day:', error)
@@ -141,14 +179,26 @@ export default function WorkoutSummaryStep({
         )}
       </div>
 
+      {/* Loading indicator */}
+      {loading && (
+        <div className="text-center py-4">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#FF5733] border-r-transparent align-[-0.125em]" role="status">
+            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+              Loading...
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-[#b3b3b3]">Loading exercises...</p>
+        </div>
+      )}
+
       {/* Exercises List */}
       <div className="space-y-4 mt-6">
         <h3 className="text-lg font-semibold text-white border-b border-[#404040] pb-2">
           Exercise Plan
         </h3>
         
-        {exercises.length > 0 ? (
-          exercises.map((exercise, index) => (
+        {!loading && workoutExercises.length > 0 ? (
+          workoutExercises.map((exercise, index) => (
             <div 
               key={exercise.id}
               className="rounded-lg border border-[#404040] bg-[#2d2d2d] p-4 transition-all duration-200 hover:border-[#FF5733]/30"
@@ -206,9 +256,11 @@ export default function WorkoutSummaryStep({
             </div>
           ))
         ) : (
-          <div className="text-center py-8 text-[#b3b3b3]">
-            <p>No exercises found for this workout day.</p>
-          </div>
+          !loading && (
+            <div className="text-center py-8 text-[#b3b3b3]">
+              <p>No exercises found for this workout day.</p>
+            </div>
+          )
         )}
       </div>
 
@@ -217,7 +269,7 @@ export default function WorkoutSummaryStep({
         <button
           type="button"
           onClick={onConfirm}
-          disabled={loading || exercises.length === 0}
+          disabled={loading || workoutExercises.length === 0}
           className="inline-flex items-center justify-center rounded-md bg-[#FF5733] px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-[#e64a2e] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Dumbbell className="mr-2 h-5 w-5" />
