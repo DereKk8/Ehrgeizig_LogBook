@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/hooks/useUser'
 import { ArrowLeft, ArrowRight, Calendar, Dumbbell, CheckCircle } from 'lucide-react'
-import { ExerciseWithSets } from '../actions/workout'
+import { ExerciseWithSets, createWorkoutSession } from '../actions/workout'
 import SelectSplitStep from './components/SelectSplitStep'
 import LoadWorkoutDayStep from './components/LoadWorkoutDayStep'
 import FetchExercisesStep from './components/FetchExercisesStep'
 import WorkoutSummaryStep from './components/WorkoutSummaryStep'
 import StartWorkoutStep from './components/StartWorkoutStep'
+import LogSetStep from './components/LogSetStep'
 
 // Define the steps for our workout flow
 const steps = [
@@ -17,7 +18,8 @@ const steps = [
   { id: 'load-workout-day', title: 'Today\'s Workout' },
   { id: 'fetch-exercises', title: 'Load Exercises' },
   { id: 'workout-summary', title: 'Workout Summary' },
-  { id: 'start-workout', title: 'Start Workout' }
+  { id: 'log-sets', title: 'Log Workout' },
+  { id: 'workout-complete', title: 'Complete' }
 ]
 
 export default function WorkoutPage() {
@@ -32,11 +34,12 @@ export default function WorkoutPage() {
   const [selectedDayName, setSelectedDayName] = useState<string | null>(null)
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null)
   const [exerciseList, setExerciseList] = useState<ExerciseWithSets[]>([])
+  const [completedExercises, setCompletedExercises] = useState<number[]>([])
+  const [sessionId, setSessionId] = useState<string | null>(null)
   
   const router = useRouter()
   const { user } = useUser()
 
-  
   // Navigate to next step
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
@@ -82,9 +85,43 @@ export default function WorkoutPage() {
   }
 
   // Handle start workout
-  const handleStartWorkout = () => {
-    // This would typically navigate to the actual workout interface
-    // For now, we just move to the success screen
+  const handleStartWorkout = async () => {
+    if (!selectedDayId) {
+      setError('No workout day selected')
+      return
+    }
+    
+    setLoading(true)
+    
+    try {
+      // Create a single session for the entire workout
+      const sessionResult = await createWorkoutSession(selectedDayId)
+      
+      if (!sessionResult.success) {
+        setError(sessionResult.error || 'Failed to create workout session')
+        return
+      }
+      
+      setSessionId(sessionResult.data.id)
+      // Move to the log sets step
+      nextStep()
+    } catch (error) {
+      console.error('Error starting workout:', error)
+      setError('Failed to start workout session')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  // Handle exercise completion during logging
+  const handleExerciseCompleted = (exerciseIndex: number) => {
+    if (!completedExercises.includes(exerciseIndex)) {
+      setCompletedExercises(prev => [...prev, exerciseIndex])
+    }
+  }
+  
+  // Handle completion of all exercises
+  const handleAllExercisesCompleted = () => {
     nextStep()
   }
 
@@ -185,7 +222,18 @@ export default function WorkoutPage() {
             />
           )}
           
-          {currentStep === 4 && (
+          {currentStep === 4 && selectedDayId && sessionId && (
+            <LogSetStep
+              splitDayId={selectedDayId}
+              sessionId={sessionId}
+              exercises={exerciseList}
+              onExerciseCompleted={handleExerciseCompleted}
+              onAllExercisesCompleted={handleAllExercisesCompleted}
+              setError={setError}
+            />
+          )}
+          
+          {currentStep === 5 && (
             <StartWorkoutStep
               splitName={selectedSplitName || ''}
               dayName={selectedDayName || ''}
@@ -220,15 +268,19 @@ export default function WorkoutPage() {
                 disabled={loading || exerciseList.length === 0}
                 className="flex items-center space-x-2 rounded-md bg-[#FF5733] px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-[#e64a2e] disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                {loading ? (
+                  <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-solid border-white border-r-transparent mr-2" />
+                ) : (
+                  <Dumbbell className="h-5 w-5 mr-2" />
+                )}
                 <span>Start Workout</span>
-                <Dumbbell className="h-5 w-5" />
               </button>
             )}
           </div>
         )}
         
-        {/* Return to Dashboard (shown on last step) */}
-        {currentStep === 4 && (
+        {/* Return to Dashboard (shown on complete step) */}
+        {currentStep === 5 && (
           <div className="mt-6 flex justify-center">
             <button
               type="button"
