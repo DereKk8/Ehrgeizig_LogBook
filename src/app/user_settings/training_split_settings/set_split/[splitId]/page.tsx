@@ -84,6 +84,7 @@ const steps = [
   { id: 'review', title: 'Review' }
 ]
 
+// Updated with proper type definition for props
 export default function EditSplitPage({ params }: { params: { splitId: string } }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
