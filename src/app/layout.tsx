@@ -12,7 +12,12 @@ export const metadata: Metadata = {
   title: "Ehrgeizig - Fitness Tracking App",
   description: "Track your fitness journey with personalized workout logs and training split management",
   icons: {
-    icon: '/ehrgeizig-favicon.svg',
+    icon: [
+      { url: '/ehrgeizig-favicon.svg', type: 'image/svg+xml' },
+      { url: '/ehrgeizig-favicon.svg', sizes: '32x32' }
+    ],
+    shortcut: '/ehrgeizig-favicon.svg',
+    apple: '/ehrgeizig-favicon.svg',
   },
 };
 
