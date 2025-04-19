@@ -24,12 +24,12 @@ export default function WorkoutHistoryPage() {
                 
                 <p className="text-gray-600 mb-6">
                     The Workout History feature is currently under development and will be available in a future update.
-                    We're working hard to bring you comprehensive workout tracking and analysis.
+                    We&apos;re working hard to bring you comprehensive workout tracking and analysis.
                 </p>
                 
                 <div className="bg-blue-50 p-4 rounded-md mb-6">
                     <p className="text-sm text-blue-700">
-                        You'll soon be able to view all your past workouts, track your progress, and analyze your performance trends.
+                        You&apos;ll soon be able to view all your past workouts, track your progress, and analyze your performance trends.
                     </p>
                 </div>
                 

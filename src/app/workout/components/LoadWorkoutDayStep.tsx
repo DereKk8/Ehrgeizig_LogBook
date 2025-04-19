@@ -80,7 +80,7 @@ export default function LoadWorkoutDayStep({
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-[#FF5733]" />
         <p className="mt-4 text-[#b3b3b3]">
-          {autoSelectingDay ? 'Loading today\'s workout...' : 'Loading workout days...'}
+          {autoSelectingDay ? "Loading today&apos;s workout..." : "Loading workout days..."}
         </p>
       </div>
     )
