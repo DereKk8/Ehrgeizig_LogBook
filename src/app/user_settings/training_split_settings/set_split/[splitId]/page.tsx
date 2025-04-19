@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { ArrowLeft, Check, Loader2, AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { createSplit, getSplitById, updateSplit } from '@/app/actions/splits'
 import { useUser } from '@/lib/hooks/useUser'
 import SplitNameStep from '../components/SplitNameStep'
@@ -15,7 +15,6 @@ import ExerciseSetupStep from '../components/ExerciseSetupStep'
 import ExerciseDetailsStep from '../components/ExerciseDetailsStep'
 import ReviewStep from '../components/ReviewStep'
 import SuccessConfirmation from '../components/SuccessConfirmation'
-import { use } from 'react' // Import use hook from React
 
 const DAYS = [
   'Sunday',
@@ -96,9 +95,10 @@ export default function EditSplitPage({ params }: { params: { splitId: string } 
   const [submittedData, setSubmittedData] = useState<FormData | null>(null)
   const router = useRouter()
   const { user } = useUser()
-  // Unwrap the params correctly using React.use
-  const splitId = typeof params.splitId === 'string' ? params.splitId : 
-                (params.splitId instanceof Promise ? use(params.splitId) : null)
+  // Get the splitId from params in a way that avoids the React.use() warning
+  // This is safer than trying to directly unwrap a Promise with React.use()
+  const routeParams = useParams();
+  const splitId = params?.splitId || (routeParams?.splitId as string);
 
   const methods = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -143,8 +143,9 @@ export default function EditSplitPage({ params }: { params: { splitId: string } 
           if (user?.id) {
             await fetchSplitData(user.id);
           } else {
-            // Try one more time with a direct client-side check
+            // Try creating a session client-side
             try {
+              // Try to get user session another way
               const response = await fetch('/api/auth/session');
               const session = await response.json();
               
@@ -160,7 +161,7 @@ export default function EditSplitPage({ params }: { params: { splitId: string } 
               setIsLoading(false);
             }
           }
-        }, 1500);
+        }, 2000); // Increased timeout for slower connections
       } catch (err) {
         if (!isMounted) return;
         console.error('Error in loadSplit:', err);
@@ -195,7 +196,12 @@ export default function EditSplitPage({ params }: { params: { splitId: string } 
       }
     }
     
-    loadSplit();
+    if (splitId) {
+      loadSplit();
+    } else {
+      setError('Invalid split ID. Please try again');
+      setIsLoading(false);
+    }
     
     // Cleanup function to prevent state updates after unmount
     return () => {

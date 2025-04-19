@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, Calendar, ClipboardList, Download, History, Plus, Edit2, Loader2, Dumbbell } from "lucide-react"
 import { getUserSplits } from "@/app/actions/workout"
 import { useUser } from "@/lib/hooks/useUser"
@@ -39,6 +40,11 @@ export default function TrainingSplitSettingsPage() {
     
     fetchSplits()
   }, [])
+
+  // Create split edit URL strings properly to avoid params warning
+  const getEditSplitUrl = (splitId: string) => {
+    return `/user_settings/training_split_settings/set_split/${splitId}`;
+  };
 
   return (
     <div className="min-h-screen bg-[#121212]">
@@ -117,7 +123,7 @@ export default function TrainingSplitSettingsPage() {
                   
                   <div className="flex space-x-4 mt-6">
                     <Link
-                      href={`/user_settings/training_split_settings/set_split/${split.id}`}
+                      href={getEditSplitUrl(split.id)}
                       className="flex-1 inline-flex items-center justify-center rounded-md border border-[#FF5733] bg-transparent px-4 py-2 text-[#FF5733] transition-colors hover:bg-[#FF5733]/10"
                     >
                       <Edit2 className="mr-2 h-4 w-4" />
