@@ -32,20 +32,7 @@ export default function ExerciseSetupStep() {
   const [currentDay, setCurrentDay] = useState(0)
   const days = watch('days') as Day[]
 
-  // Effect to clear exercise fields when rendered
-  useEffect(() => {
-    days.forEach((day, index) => {
-      if (!day.isRestDay && day.exerciseCount > 0) {
-        const emptyExercises = Array(day.exerciseCount).fill({
-          name: '',
-          sets: '',
-          restTimeSec: '',
-          note: ''
-        })
-        setValue(`days.${index}.exercises`, emptyExercises)
-      }
-    })
-  }, [days, setValue])
+  // Removed the problematic useEffect that was clearing exercise fields on each render
 
   const handleAddExercise = (dayIndex: number, e: React.MouseEvent) => {
     e.preventDefault()
@@ -173,4 +160,4 @@ export default function ExerciseSetupStep() {
       </div>
     </div>
   )
-} 
+}
