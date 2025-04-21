@@ -367,7 +367,7 @@ export default function LogSetStep({
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-white">Workout Complete!</h2>
           <p className="text-[#b3b3b3]">
-            You've successfully logged all exercises for this workout.
+            You&apos;ve successfully logged all exercises for this workout.
           </p>
         </div>
         

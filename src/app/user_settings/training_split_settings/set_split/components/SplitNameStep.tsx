@@ -10,7 +10,7 @@ export default function SplitNameStep() {
       <div>
         <h2 className="text-2xl font-bold text-white">Name Your Training Split</h2>
         <p className="mt-2 text-[#b3b3b3]">
-          Give your training split a descriptive name (e.g., "Push/Pull/Legs", "Strength Split")
+          Give your training split a descriptive name (e.g., &quot;Push/Pull/Legs&quot;, &quot;Strength Split&quot;)
         </p>
       </div>
 
@@ -31,4 +31,4 @@ export default function SplitNameStep() {
       </div>
     </div>
   )
-} 
+}

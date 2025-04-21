@@ -99,7 +99,7 @@ export default function LoadWorkoutDayStep({
         </div>
         <h2 className="text-2xl font-bold text-white">Select Workout Day</h2>
         <p className="mt-3 text-[#b3b3b3]">
-          Choose which workout day you want to perform from "{splitName}"
+          Choose which workout day you want to perform from &quot;{splitName}&quot;
         </p>
       </div>
 

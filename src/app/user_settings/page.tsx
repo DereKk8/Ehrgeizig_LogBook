@@ -90,7 +90,7 @@ export default function UserSettingsPage() {
           {/* Log Out Section */}
           <section className="rounded-lg border border-[#404040] bg-[#1e1e1e] p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-white">Account Access</h2>
-            <p className="mb-4 text-[#b3b3b3]">Log out of your account on this device. This will clear your "Remember Me" preference.</p>
+            <p className="mb-4 text-[#b3b3b3]">Log out of your account on this device. This will clear your &quot;Remember Me&quot; preference.</p>
             <button
               type="button"
               onClick={handleLogoutClick}

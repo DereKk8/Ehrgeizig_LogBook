@@ -49,7 +49,7 @@ export default function SuccessConfirmation({ formData }: SuccessConfirmationPro
           </h1>
           
           <p className="text-[#b3b3b3] text-center max-w-lg mx-auto">
-            Your training split "<span className="text-white font-medium">{formData.splitName}</span>" 
+            Your training split &quot;<span className="text-white font-medium">{formData.splitName}</span>&quot; 
             has been saved successfully. You can now use it for your workout sessions.
           </p>
           
