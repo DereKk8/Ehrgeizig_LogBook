@@ -1,7 +1,7 @@
 'use client'
 
 import { useFormContext } from 'react-hook-form'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dumbbell, CalendarRange, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react'
 import React, { memo } from 'react'
 
@@ -69,12 +69,34 @@ const SetItem = memo(({
   const repsValue = watch(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.reps`);
   const weightValue = watch(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.weight`);
   
+  // Local state to ensure immediate feedback when typing
+  const [localReps, setLocalReps] = useState(isNaN(repsValue) ? "" : repsValue || "");
+  const [localWeight, setLocalWeight] = useState(isNaN(weightValue) ? "" : weightValue || "");
+  
+  // Update local state when watched values change
+  useEffect(() => {
+    setLocalReps(isNaN(repsValue) ? "" : repsValue || "");
+  }, [repsValue]);
+  
+  useEffect(() => {
+    setLocalWeight(isNaN(weightValue) ? "" : weightValue || "");
+  }, [weightValue]);
+  
   // Helper function to handle input change
   const handleInputChange = (field: string, value: string) => {
+    // Update local state immediately for responsive UI
+    if (field === "reps") {
+      setLocalReps(value);
+    } else if (field === "weight") {
+      setLocalWeight(value);
+    }
+    
     // Convert to number or set to undefined if empty
     const numValue = value === "" ? undefined : Number(value);
     setValue(`days.${dayIndex}.exercises.${exerciseIndex}.setsData.${setIndex}.${field}`, numValue);
-    setTimeout(() => checkDayCompletion(dayIndex), 0);
+    
+    // Trigger validation after a brief delay to avoid excessive updates
+    setTimeout(() => checkDayCompletion(dayIndex), 100);
   };
 
   return (
@@ -96,7 +118,7 @@ const SetItem = memo(({
             type="text"
             inputMode="numeric"
             placeholder="Enter reps"
-            value={isNaN(repsValue) ? "" : repsValue || ""}
+            value={localReps}
             onChange={(e) => handleInputChange("reps", e.target.value)}
             className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
           />
@@ -109,7 +131,7 @@ const SetItem = memo(({
             type="text"
             inputMode="decimal"
             placeholder="Enter weight"
-            value={isNaN(weightValue) ? "" : weightValue || ""}
+            value={localWeight}
             onChange={(e) => handleInputChange("weight", e.target.value)}
             className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-2 text-white placeholder-[#666666] transition-all duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733] focus:shadow-sm focus:shadow-[#FF5733]/20"
           />
@@ -118,6 +140,9 @@ const SetItem = memo(({
     </div>
   );
 });
+
+// Add display name
+SetItem.displayName = 'SetItem';
 
 // Define ExerciseCard component outside the parent component
 const ExerciseCard = memo(({ 
@@ -184,6 +209,9 @@ const ExerciseCard = memo(({
   );
 });
 
+// Add display name
+ExerciseCard.displayName = 'ExerciseCard';
+
 export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
   const { register, watch, setValue, getValues } = useFormContext()
   const [currentDay, setCurrentDay] = useState(0)
@@ -209,6 +237,7 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
     let allConfigured = true;
     
     for (const dayIndex of trainingDayIndices) {
+      // Using a separate variable here to avoid calling the function directly in the effect's body
       const isComplete = checkDayCompletion(dayIndex);
       if (!isComplete) {
         allConfigured = false;
@@ -254,7 +283,7 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
   }, [days, setValue])
 
   // Check if all exercises for a day have their sets configured
-  const checkDayCompletion = (dayIndex: number) => {
+  const checkDayCompletion = useCallback((dayIndex: number) => {
     const day = days[dayIndex];
     
     // Rest days are always considered complete
@@ -305,7 +334,7 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
     }
     
     return isComplete;
-  }
+  }, [days, completedDays, setCompletedDays]);
 
   // Navigation functions
   const goToNextDay = () => {

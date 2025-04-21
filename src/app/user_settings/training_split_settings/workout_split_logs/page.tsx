@@ -24,12 +24,12 @@ export default function WorkoutSplitLogsPage() {
                 
                 <p className="text-gray-600 mb-6">
                     The Workout Split Logs feature is currently under development and will be available in a future update.
-                    We're working hard to bring you detailed logging and tracking for your training splits.
+                    We&apos;re working hard to bring you detailed logging and tracking for your training splits.
                 </p>
                 
                 <div className="bg-blue-50 p-4 rounded-md mb-6">
                     <p className="text-sm text-blue-700">
-                        You'll soon be able to view historical data for each of your training splits and track your adherence to your workout plans.
+                        You&apos;ll soon be able to view historical data for each of your training splits and track your adherence to your workout plans.
                     </p>
                 </div>
                 

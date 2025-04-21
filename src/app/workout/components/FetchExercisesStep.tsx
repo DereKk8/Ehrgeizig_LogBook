@@ -76,7 +76,7 @@ export default function FetchExercisesStep({
       </div>
       
       <div className="text-center max-w-md text-sm text-[#b3b3b3]">
-        <p>We're pre-filling your workout with your most recent weights and reps for each exercise.</p>
+        <p>We&apos;re pre-filling your workout with your most recent weights and reps for each exercise.</p>
       </div>
     </div>
   )

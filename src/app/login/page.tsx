@@ -186,7 +186,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-8 text-center text-sm">
-          <span className="text-[#b3b3b3]">Don't have an account? </span>
+          <span className="text-[#b3b3b3]">Don&apos;t have an account? </span>
           <Link href="/signup" className="font-medium text-[#FF5733] hover:text-[#ff8a5f] transition-colors">
             Sign up
           </Link>

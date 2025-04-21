@@ -367,7 +367,7 @@ export default function LogSetStep({
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-white">Workout Complete!</h2>
           <p className="text-[#b3b3b3]">
-            You've successfully logged all exercises for this workout.
+            You&apos;ve successfully logged all exercises for this workout.
           </p>
         </div>
         
@@ -749,6 +749,16 @@ export default function LogSetStep({
           </button>
         </div>
       )}
+      
+      <div className="text-center max-w-md text-sm text-[#b3b3b3]">
+        <p className="mt-2 text-sm text-[#b3b3b3]">
+          Fetching your previous records...
+        </p>
+      </div>
+      
+      <div className="text-center max-w-md text-sm text-[#b3b3b3]">
+        <p>We&apos;re pre-filling your workout with your most recent weights and reps for each exercise.</p>
+      </div>
     </div>
   )
 }

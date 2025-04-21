@@ -65,7 +65,7 @@ export default function ReLogExerciseMode({
         <div className="mt-4 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-sm text-blue-400">
           <div className="flex items-center">
             <Edit className="h-4 w-4 mr-2 flex-shrink-0" />
-            <p>Re-logging Mode: You can now edit previously logged sets for this exercise. Make your changes and tap "Update Sets" to save them.</p>
+            <p>Re-logging Mode: You can now edit previously logged sets for this exercise. Make your changes and tap &quot;Update Sets&quot; to save them.</p>
           </div>
         </div>
       )}

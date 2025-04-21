@@ -24,12 +24,12 @@ export default function DownloadHistoryPage() {
                 
                 <p className="text-gray-600 mb-6">
                     The Download History feature is currently under development and will be available in a future update.
-                    We're working hard to bring you a comprehensive download tracking system.
+                    We&apos;re working hard to bring you a comprehensive download tracking system.
                 </p>
                 
                 <div className="bg-blue-50 p-4 rounded-md mb-6">
                     <p className="text-sm text-blue-700">
-                        You'll be able to view and manage your previous data downloads and exports.
+                        You&apos;ll be able to view and manage your previous data downloads and exports.
                     </p>
                 </div>
                 
