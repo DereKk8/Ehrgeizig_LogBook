@@ -1,7 +1,7 @@
 'use client'
 
 import Link from "next/link"
-import { Activity, Home, User, Settings } from "lucide-react"
+import { Activity, Home, User, Settings, Dumbbell, ArrowRight, Clock, Flame, TrendingUp } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 
@@ -14,7 +14,9 @@ interface Workout {
 export default function DashboardPage() {
   const [userName, setUserName] = useState('')
   const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([])
-
+  const [isButtonHovered, setIsButtonHovered] = useState(false)
+  const [showMotivation, setShowMotivation] = useState(false)
+  
   useEffect(() => {
     const fetchUserData = async () => {
       const supabase = createClient()
@@ -34,6 +36,13 @@ export default function DashboardPage() {
     }
 
     fetchUserData()
+    
+    // Show motivation message after a short delay for better UX
+    const timer = setTimeout(() => {
+      setShowMotivation(true)
+    }, 600)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   return (
@@ -85,19 +94,63 @@ export default function DashboardPage() {
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold text-white md:text-3xl">Welcome, {userName || 'Athlete'}</h1>
             <p className="mt-2 text-[#b3b3b3]">Track your fitness journey</p>
+            
+            {/* Animated motivation text */}
+            {showMotivation && (
+              <div className="mt-4 animate-fade-in">
+                <p className="text-sm font-medium text-[#FF5733]">
+                  Today is a great day for a workout! 
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Dashboard content */}
           <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-            {/* Start Workout Button */}
-            <div className="rounded-lg border border-[#404040] bg-[#1e1e1e] p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-white">Ready to Train?</h2>
+            {/* Start Workout Button - Enhanced */}
+            <div className="relative rounded-lg border border-[#404040] bg-gradient-to-br from-[#1e1e1e] to-[#2a2a2a] p-6 shadow-lg transition-all duration-300 hover:shadow-xl">
+              <div className={`absolute inset-0 rounded-lg bg-[#FF5733] opacity-5 transition-opacity duration-300 ${isButtonHovered ? 'opacity-10' : ''}`}></div>
+              
+              <div className="relative z-10 mb-4 flex items-center">
+                <div className="mr-3 rounded-full bg-[#FF5733]/20 p-2">
+                  <Dumbbell className="h-6 w-6 text-[#FF5733]" />
+                </div>
+                <h2 className="text-lg font-semibold text-white">Ready to Train?</h2>
+              </div>
+              
+              <div className="relative z-10 mb-5 flex items-center space-x-4 rounded-md bg-[#252525] p-3">
+                <div className="flex items-center">
+                  <Clock className="mr-2 h-5 w-5 text-[#b3b3b3]" />
+                  <span className="text-sm text-white">Today &apos;s Training</span>
+                </div>
+                <div className="flex flex-1 justify-end">
+                  <span className="rounded-full bg-[#FF5733]/20 px-3 py-1 text-xs font-medium text-[#FF5733]">Available</span>
+                </div>
+              </div>
+              
               <Link
                 href="/workout"
-                className="inline-flex w-full items-center justify-center rounded-md bg-[#FF5733] px-4 py-3 text-white transition-colors hover:bg-[#ff8a5f] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f] focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
+                className="relative z-10 inline-flex w-full items-center justify-center rounded-md bg-[#FF5733] px-4 py-4 text-lg font-medium text-white transition-all duration-300 hover:bg-[#ff7755] focus:outline-none focus:ring-2 focus:ring-[#ff8a5f] focus:ring-offset-2 focus:ring-offset-[#1e1e1e]"
+                onMouseEnter={() => setIsButtonHovered(true)}
+                onMouseLeave={() => setIsButtonHovered(false)}
               >
-                Start Workout
+                <div className="flex items-center">
+                  <Dumbbell className={`mr-2 h-6 w-6 transition-transform duration-300 ${isButtonHovered ? 'scale-110' : ''}`} />
+                  <span>Start Workout</span>
+                </div>
+                <ArrowRight className={`ml-2 h-5 w-5 transition-transform duration-300 ${isButtonHovered ? 'translate-x-1' : ''}`} />
               </Link>
+              
+              <div className="relative z-10 mt-4 flex justify-around">
+                <div className="flex flex-col items-center">
+                  <Flame className="h-5 w-5 text-[#FF5733]" />
+                  <span className="mt-1 text-xs text-[#b3b3b3]">Get Stronger</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <TrendingUp className="h-5 w-5 text-[#FF5733]" />
+                  <span className="mt-1 text-xs text-[#b3b3b3]">Track Progress</span>
+                </div>
+              </div>
             </div>
 
             {/* Recent Workouts */}
@@ -113,7 +166,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="rounded-md bg-[#2d2d2d] p-4 text-center text-[#b3b3b3]">
-                    No recent workouts. Start your first workout today!
+                    We are working to bring this feature in the future!
                   </div>
                 )}
               </div>
