@@ -40,6 +40,7 @@ export default function LogSetStep({
     note: ''
   })
   const [isEditingExercise, setIsEditingExercise] = useState<boolean>(false)
+  const [isReloggingActive, setIsReloggingActive] = useState<boolean>(false)
 
   const currentExercise = exercises[currentExerciseIndex]
   const { user } = useUser()
@@ -644,9 +645,9 @@ export default function LogSetStep({
                     inputMode="numeric"
                     value={currentSet.reps || ''}
                     onChange={(e) => handleInputChange(setIndex, 'reps', e.target.value)}
-                    disabled={isExerciseCompleted}
+                    disabled={isExerciseCompleted && !isReloggingActive}
                     className={`w-full rounded bg-[#404040] px-3 py-2 text-center text-white placeholder-[#666666] ${
-                      isExerciseCompleted
+                      isExerciseCompleted && !isReloggingActive
                         ? 'opacity-75 cursor-not-allowed border border-green-500/20' 
                         : ''
                     }`}
@@ -660,9 +661,9 @@ export default function LogSetStep({
                       inputMode="decimal"
                       value={currentSet.weight || ''}
                       onChange={(e) => handleInputChange(setIndex, 'weight', e.target.value)}
-                      disabled={isExerciseCompleted}
+                      disabled={isExerciseCompleted && !isReloggingActive}
                       className={`w-full rounded bg-[#404040] px-3 py-2 text-center text-white placeholder-[#666666] ${
-                        isExerciseCompleted
+                        isExerciseCompleted && !isReloggingActive
                           ? 'opacity-75 cursor-not-allowed border border-green-500/20' 
                           : ''
                       }`}
@@ -705,6 +706,7 @@ export default function LogSetStep({
             setExerciseSets={setExerciseSets}
             onSetsUpdated={handleSetsUpdated}
             setError={setError}
+            setIsReloggingActive={setIsReloggingActive}
           />
         )}
       </div>
@@ -749,16 +751,6 @@ export default function LogSetStep({
           </button>
         </div>
       )}
-      
-      <div className="text-center max-w-md text-sm text-[#b3b3b3]">
-        <p className="mt-2 text-sm text-[#b3b3b3]">
-          Fetching your previous records...
-        </p>
-      </div>
-      
-      <div className="text-center max-w-md text-sm text-[#b3b3b3]">
-        <p>We&apos;re pre-filling your workout with your most recent weights and reps for each exercise.</p>
-      </div>
     </div>
   )
 }

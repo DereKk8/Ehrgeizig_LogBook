@@ -14,6 +14,7 @@ interface ReLogHandlerProps {
   setExerciseSets: (index: number, sets: { reps: number, weight: number }[]) => void
   onSetsUpdated: (exerciseIndex: number) => void
   setError: (error: string | null) => void
+  setIsReloggingActive?: (isRelogging: boolean) => void
 }
 
 export default function ReLogHandler({
@@ -24,7 +25,8 @@ export default function ReLogHandler({
   exerciseSets,
   setExerciseSets,
   onSetsUpdated,
-  setError
+  setError,
+  setIsReloggingActive
 }: ReLogHandlerProps) {
   const [isRelogging, setIsRelogging] = useState<boolean>(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -33,6 +35,9 @@ export default function ReLogHandler({
   // Handle re-logging a completed exercise
   const handleRelogExercise = () => {
     setIsRelogging(true)
+    if (setIsReloggingActive) {
+      setIsReloggingActive(true)
+    }
   }
 
   // Cancel re-logging and restore original values
@@ -45,6 +50,9 @@ export default function ReLogHandler({
     
     setExerciseSets(currentExerciseIndex, originalSets)
     setIsRelogging(false)
+    if (setIsReloggingActive) {
+      setIsReloggingActive(false)
+    }
     
     showToast('Changes cancelled', 'success')
   }
@@ -100,6 +108,9 @@ export default function ReLogHandler({
       
       // Exit re-logging mode
       setIsRelogging(false)
+      if (setIsReloggingActive) {
+        setIsReloggingActive(false)
+      }
     } catch (error) {
       console.error('Error updating sets:', error)
       setError('An error occurred while updating sets')
