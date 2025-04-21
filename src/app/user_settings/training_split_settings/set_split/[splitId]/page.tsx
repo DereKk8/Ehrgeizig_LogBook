@@ -85,8 +85,8 @@ const steps = [
   { id: 'review', title: 'Review' }
 ]
 
-// Updated with proper type definition for props
-export default function EditSplitPage({ params }: { params: { splitId: string } }) {
+// Updated with proper type definition for props and using React.use() to unwrap params
+export default function EditSplitPage({ params }: { params: Promise<{ splitId: string }> }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -97,10 +97,10 @@ export default function EditSplitPage({ params }: { params: { splitId: string } 
   const [submittedData, setSubmittedData] = useState<FormData | null>(null)
   const router = useRouter()
   const { user } = useUser()
-  // Get the splitId from params in a way that avoids the React.use() warning
-  // This is safer than trying to directly unwrap a Promise with React.use()
-  const routeParams = useParams();
-  const splitId = params?.splitId || (routeParams?.splitId as string);
+  
+  // Properly unwrap the params using React.use()
+  const unwrappedParams = React.use(params);
+  const splitId = unwrappedParams.splitId;
 
   const methods = useForm<FormData>({
     resolver: zodResolver(formSchema),
