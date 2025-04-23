@@ -36,6 +36,7 @@ export default function WorkoutPage() {
   const [exerciseList, setExerciseList] = useState<ExerciseWithSets[]>([])
   const [completedExercises, setCompletedExercises] = useState<number[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [isTodayWorkout, setIsTodayWorkout] = useState(false)
   
   const router = useRouter()
   const { user } = useUser()
@@ -66,6 +67,10 @@ export default function WorkoutPage() {
     setSelectedDayId(dayId)
     setSelectedDayName(dayName)
     setSelectedDayIndex(dayIndex)
+    
+    // Check if the selected day is today
+    setIsTodayWorkout(dayIndex === new Date().getDay())
+    
     nextStep()
   }
 
@@ -80,6 +85,10 @@ export default function WorkoutPage() {
     setSelectedDayId(dayId)
     setSelectedDayName(dayName)
     setSelectedDayIndex(dayIndex)
+    
+    // Update if this is today's workout
+    setIsTodayWorkout(dayIndex === new Date().getDay())
+    
     // We stay on the current step but will reload exercises
     setCurrentStep(2) // Go back to fetch exercises step
   }
@@ -140,7 +149,9 @@ export default function WorkoutPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <h1 className="flex items-center text-xl font-bold text-white">
             <Dumbbell className="mr-2 h-6 w-6 text-[#FF5733]" />
-            Start Workout
+            {currentStep > 0 && currentStep < steps.length - 1 && selectedDayName && isTodayWorkout 
+              ? `Today's Workout: ${selectedDayName}`
+              : "Start Workout"}
           </h1>
           <div className="text-sm font-medium text-white">
             Step {currentStep + 1} of {steps.length}
@@ -283,7 +294,7 @@ export default function WorkoutPage() {
                 ) : (
                   <Dumbbell className="h-5 w-5 mr-2" />
                 )}
-                <span>Start Workout</span>
+                <span>{isTodayWorkout ? "Start Today's Workout" : "Start Workout"}</span>
               </button>
             )}
           </div>
