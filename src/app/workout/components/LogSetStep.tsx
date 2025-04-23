@@ -483,7 +483,7 @@ export default function LogSetStep({
           {!isEditingExercise ? (
             <span className="px-2 py-1 rounded-full bg-[#404040]/50 flex items-center">
               <Clock className="h-4 w-4 mr-1" />
-              {currentExercise.restTimeSec}s rest
+              {Math.floor(currentExercise.restTimeSec / 60)}:{(currentExercise.restTimeSec % 60).toString().padStart(2, '0')} rest
             </span>
           ) : (
             <div className="flex items-center space-x-2">
