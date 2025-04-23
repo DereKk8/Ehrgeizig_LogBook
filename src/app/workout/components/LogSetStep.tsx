@@ -689,7 +689,10 @@ export default function LogSetStep({
               {isSaving ? (
                 <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-solid border-white border-r-transparent" />
               ) : (
-                'Log All Sets'
+                <>
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  <span>Save & Complete Sets</span>
+                </>
               )}
             </button>
           </div>
