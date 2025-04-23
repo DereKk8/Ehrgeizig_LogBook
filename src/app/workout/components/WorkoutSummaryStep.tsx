@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { getSplitDays, loadWorkoutWithPrefilledSets } from '@/app/actions/workout'
 import { ExerciseWithSets } from '@/app/actions/workout'
-import { Clock, ChevronDown, Dumbbell, RotateCcw, ChevronUp } from 'lucide-react'
+import { Clock, ChevronDown, Dumbbell, RotateCcw, ChevronUp, Home } from 'lucide-react'
 import { DayOfWeek, SplitDay } from '@/app/types/db'
+import Link from 'next/link'
 
 interface WorkoutSummaryStepProps {
   splitId: string
@@ -264,8 +265,8 @@ export default function WorkoutSummaryStep({
         )}
       </div>
 
-      {/* Start Button - Moved to parent component for better control */}
-      <div className="mt-6 text-center">
+      {/* Action Buttons - Updated to include Back to Home button */}
+      <div className="mt-6 text-center flex flex-col space-y-4">
         <button
           type="button"
           onClick={onConfirm}
@@ -275,6 +276,12 @@ export default function WorkoutSummaryStep({
           <Dumbbell className="mr-2 h-5 w-5" />
           Start Workout
         </button>
+        
+        <Link href="/home" className="inline-flex items-center justify-center rounded-md bg-[#404040] px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-[#505050]">
+          <Home className="mr-2 h-5 w-5" />
+          Back to Home
+        </Link>
+        
         <p className="mt-2 text-xs text-[#b3b3b3]">
           Review your exercise plan before starting
         </p>
