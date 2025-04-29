@@ -8,9 +8,15 @@ interface StartWorkoutStepProps {
   splitName: string
   dayName: string
   exercises: ExerciseWithSets[]
+  isCompleted?: boolean
 }
 
-export default function StartWorkoutStep({ splitName, dayName, exercises }: StartWorkoutStepProps) {
+export default function StartWorkoutStep({ 
+  splitName, 
+  dayName, 
+  exercises, 
+  isCompleted = false 
+}: StartWorkoutStepProps) {
   const router = useRouter()
   
   return (
@@ -22,10 +28,12 @@ export default function StartWorkoutStep({ splitName, dayName, exercises }: Star
       </div>
       
       <div className="text-center space-y-4">
-        <h2 className="text-2xl font-bold text-white">Workout Ready to Start!</h2>
+        <h2 className="text-2xl font-bold text-white">
+          {isCompleted ? "Workout Completed!" : "Workout Ready to Start!"}
+        </h2>
         <p className="text-[#b3b3b3]">
-          Your <span className="text-white font-medium">{splitName} - {dayName}</span> workout has been prepared
-          with {exercises.length} exercises.
+          Your <span className="text-white font-medium">{splitName} - {dayName}</span> workout has been 
+          {isCompleted ? " completed" : " prepared"}.
         </p>
       </div>
       
@@ -55,12 +63,17 @@ export default function StartWorkoutStep({ splitName, dayName, exercises }: Star
       
       <div className="mt-10 w-full max-w-sm">
         <p className="text-center text-sm text-[#b3b3b3] mb-4">
-          Your workout is now ready to begin. You can track your progress and log your sets during the session.
+          {isCompleted 
+            ? "Great job! Your workout has been logged and saved to your history."
+            : "Your workout is now ready to begin. You can track your progress and log your sets during the session."
+          }
         </p>
         
-        <p className="text-center text-xs text-[#b3b3b3]">
-          Note: This is a preview implementation. The actual workout tracking functionality will be implemented in the future.
-        </p>
+        {!isCompleted && (
+          <p className="text-center text-xs text-[#b3b3b3]">
+            Note: This is a preview implementation. The actual workout tracking functionality will be implemented in the future.
+          </p>
+        )}
       </div>
     </div>
   )

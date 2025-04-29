@@ -371,6 +371,7 @@ export default function WorkoutPage() {
               splitName={selectedSplitName || ''}
               dayName={selectedDayName || ''}
               exercises={exerciseList}
+              isCompleted={true}
             />
           )}
 
