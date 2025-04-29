@@ -26,6 +26,7 @@ type Exercise = {
   restTimeSec: number
   note?: string
   setsData: ExerciseSet[]
+  muscleGroups?: string[]
 }
 
 type Day = {
@@ -178,6 +179,20 @@ const ExerciseCard = memo(({
           </h4>
         </div>
       </div>
+      
+      {/* Muscle Groups Display */}
+      {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {exercise.muscleGroups.map((group: string) => (
+            <span 
+              key={group} 
+              className="px-2 py-1 text-xs rounded-full bg-[#FF5733]/10 text-[#FF5733] border border-[#FF5733]/20"
+            >
+              {group}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">

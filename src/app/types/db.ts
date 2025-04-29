@@ -31,6 +31,7 @@ export type Exercise = {
   rest_time_sec: number;
   note?: string;
   exercise_order: number;
+  muscle_groups?: string[]; // Array of muscle group IDs
 };
 
 export type Session = {
@@ -60,4 +61,18 @@ export enum DayOfWeek {
   Friday = 5,
   Saturday = 6,
 }
+
+// Muscle Group options
+export enum MuscleGroup {
+  Chest = "Chest",
+  Biceps = "Biceps",
+  Triceps = "Triceps",
+  Quads = "Quads",
+  Hamstrings = "Hamstrings",
+  Back = "Back",
+  Shoulders = "Shoulders"
+}
+
+// All available muscle groups as an array for selection
+export const MUSCLE_GROUPS = Object.values(MuscleGroup);
 

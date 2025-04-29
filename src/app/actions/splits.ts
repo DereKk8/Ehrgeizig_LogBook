@@ -14,6 +14,7 @@ type Exercise = {
   restTimeSec: number
   note?: string
   setsData: ExerciseSet[]
+  muscleGroups?: string[]
 }
 
 type Day = {
@@ -157,7 +158,9 @@ export async function getSplitById(splitId: string, userId: string) {
           sets: exercise.default_sets,
           restTimeSec: exercise.rest_time_sec,
           note: exercise.note || '',
-          setsData: []
+          setsData: [],
+          muscleGroups: exercise.muscle_groups ? 
+            Array.isArray(exercise.muscle_groups) ? exercise.muscle_groups : JSON.parse(exercise.muscle_groups || '[]') : []
         }
         
         // If we found a session, fetch the sets
@@ -336,7 +339,9 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
                 default_sets: exercise.sets,
                 rest_time_sec: exercise.restTimeSec,
                 note: exercise.note,
-                exercise_order: exerciseIndex + 1
+                exercise_order: exerciseIndex + 1,
+                muscle_groups: exercise.muscleGroups && exercise.muscleGroups.length > 0 ? 
+                  exercise.muscleGroups : null
               })
               .select()
               .single()
@@ -413,7 +418,9 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
                 default_sets: exercise.sets,
                 rest_time_sec: exercise.restTimeSec,
                 note: exercise.note,
-                exercise_order: exerciseIndex + 1
+                exercise_order: exerciseIndex + 1,
+                muscle_groups: exercise.muscleGroups && exercise.muscleGroups.length > 0 ? 
+                  exercise.muscleGroups : null
               })
               .select()
               .single()
@@ -542,7 +549,10 @@ export async function createSplit(data: FormData, userId: string) {
               default_sets: exercise.sets,
               rest_time_sec: exercise.restTimeSec,
               note: exercise.note,
-              exercise_order: exerciseIndex + 1 // This field isn't in your schema - we should add it or remove it
+              exercise_order: exerciseIndex + 1,
+              // Use Postgres JSONB type to store arrays natively
+              muscle_groups: exercise.muscleGroups && exercise.muscleGroups.length > 0 ? 
+                exercise.muscleGroups : null
             })
             .select()
             .single()
