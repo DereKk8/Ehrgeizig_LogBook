@@ -103,13 +103,7 @@ export default function SetSplitPage() {
         isRestDay: true,
         workoutName: 'Rest Day',
         exerciseCount: 0,
-        exercises: [{
-          name: 'Rest',
-          sets: 1,
-          restTimeSec: 0,
-          note: 'Rest day - no exercises',
-          setsData: []
-        }]
+        exercises: [] // Initialize with empty array instead of prefilled "Rest" exercise
       }))
     },
     mode: 'onChange'
@@ -309,13 +303,7 @@ export default function SetSplitPage() {
         isRestDay: true,
         workoutName: 'Rest Day',
         exerciseCount: 0,
-        exercises: [{
-          name: 'Rest',
-          sets: 1,
-          restTimeSec: 0,
-          note: 'Rest day - no exercises',
-          setsData: []
-        }]
+        exercises: [] // Keep exercises array empty for rest days
       }
     } else {
       // Clear for training day
