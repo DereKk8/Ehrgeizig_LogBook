@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useUser } from '@/lib/hooks/useUser'
-import { ArrowLeft, ArrowRight, Calendar, Dumbbell, CheckCircle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Calendar, Dumbbell, CheckCircle, AlertCircle, X } from 'lucide-react'
 import { ExerciseWithSets, createWorkoutSession } from '../actions/workout'
 import SelectSplitStep from './components/SelectSplitStep'
 import LoadWorkoutDayStep from './components/LoadWorkoutDayStep'
@@ -38,8 +38,82 @@ export default function WorkoutPage() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [isTodayWorkout, setIsTodayWorkout] = useState(false)
   
+  // Navigation confirmation dialog state
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
+  
   const router = useRouter()
+  const pathname = usePathname()
   const { user } = useUser()
+  
+  // Handle browser back/refresh/close during active workout
+  useEffect(() => {
+    // Only add the beforeunload handler when we're in the logging step and have an active workout
+    if (currentStep === 4 && sessionId) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        const message = "You have an active workout in progress. Are you sure you want to leave? Your unsaved progress will be lost.";
+        e.preventDefault();
+        e.returnValue = message;
+        return message;
+      };
+      
+      // Handle popstate events (browser back/forward buttons)
+      const handlePopState = (e: PopStateEvent) => {
+        // Show our custom confirmation dialog
+        setShowExitConfirmation(true);
+        // Set a temporary URL so we know where to go if confirmed
+        setPendingNavigation('/home');
+        
+        // Prevent the default navigation
+        e.preventDefault();
+        
+        // Push the current state back to the history to prevent navigation
+        window.history.pushState(null, '', pathname);
+      };
+      
+      // Add event listeners
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener('popstate', handlePopState);
+      
+      // Add a history entry to ensure popstate works when back is clicked
+      window.history.pushState(null, '', pathname);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+  }, [currentStep, sessionId, pathname]);
+  
+  // Custom router navigation handler
+  const safeNavigate = useCallback((url: string) => {
+    // If we're in the logging step and have an active workout, show confirmation
+    if (currentStep === 4 && sessionId) {
+      setPendingNavigation(url);
+      setShowExitConfirmation(true);
+    } else {
+      // Otherwise just navigate
+      router.push(url);
+    }
+  }, [currentStep, sessionId, router]);
+  
+  // Confirm exit and navigate
+  const confirmNavigation = () => {
+    if (pendingNavigation) {
+      // External navigation
+      router.push(pendingNavigation);
+    } else {
+      // Internal navigation (back button click)
+      setCurrentStep(currentStep - 1);
+    }
+    setShowExitConfirmation(false);
+  };
+  
+  // Cancel exit
+  const cancelNavigation = () => {
+    setPendingNavigation(null);
+    setShowExitConfirmation(false);
+  };
 
   // Navigate to next step
   const nextStep = () => {
@@ -50,10 +124,14 @@ export default function WorkoutPage() {
 
   // Go back to previous step
   const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+    // If we're in the logging step, show a confirmation dialog
+    if (currentStep === 4 && sessionId) {
+      setShowExitConfirmation(true);
+      setPendingNavigation(null); // We'll handle this internally, not with router
+    } else if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
     }
-  }
+  };
 
   // Handle split selection
   const handleSplitSelected = (splitId: string, splitName: string) => {
@@ -145,6 +223,39 @@ export default function WorkoutPage() {
 
   return (
     <div className="min-h-screen bg-[#121212]">
+      {/* Exit Confirmation Modal */}
+      {showExitConfirmation && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-[#1e1e1e] border border-[#404040] rounded-lg max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-3 rounded-full bg-[#FF5733]/20">
+                <AlertCircle className="h-8 w-8 text-[#FF5733]" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-white text-center mb-2">Exit Active Workout?</h3>
+            <p className="text-[#b3b3b3] text-center mb-6">
+              You have an active workout in progress.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={cancelNavigation}
+                className="px-4 py-2 bg-[#404040] text-white rounded-md hover:bg-[#505050] flex items-center justify-center sm:order-1"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Stay on Workout
+              </button>
+              <button
+                onClick={confirmNavigation}
+                className="px-4 py-2 bg-[#FF5733] text-white rounded-md hover:bg-[#e64a2e] flex items-center justify-center sm:order-2"
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Leave Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="border-b border-[#404040] bg-[#1e1e1e] p-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <h1 className="flex items-center text-xl font-bold text-white">
@@ -239,6 +350,7 @@ export default function WorkoutPage() {
               onDayChanged={handleDayChanged}
               onConfirm={handleStartWorkout}
               setError={setError}
+              safeNavigate={safeNavigate}
             />
           )}
           
@@ -305,7 +417,7 @@ export default function WorkoutPage() {
           <div className="mt-6 flex justify-center">
             <button
               type="button"
-              onClick={() => router.push('/home')}
+              onClick={() => safeNavigate('/home')}
               className="flex items-center space-x-2 rounded-md bg-[#2d2d2d] px-6 py-2 font-medium text-white transition-colors duration-200 hover:bg-[#333333]"
             >
               <ArrowLeft className="h-5 w-5" />
