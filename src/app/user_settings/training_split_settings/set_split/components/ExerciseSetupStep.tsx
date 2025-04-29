@@ -42,8 +42,8 @@ export default function ExerciseSetupStep() {
     if (dayData.isRestDay) return
 
     const currentExerciseCount = dayData.exerciseCount || 0
-    const currentExercises = dayData.exercises || []
-
+    
+    // Create a blank new exercise with proper numeric values
     const newExercise = {
       name: '',
       sets: '',
@@ -51,8 +51,13 @@ export default function ExerciseSetupStep() {
       note: ''
     }
 
-    const updatedExercises = [...currentExercises, newExercise]
+    // Create a completely fresh exercises array instead of appending
+    // This ensures we don't have any lingering "Rest" data
+    const updatedExercises = currentExerciseCount === 0 
+      ? [newExercise] 
+      : [...(dayData.exercises || []).map(ex => ({...ex})), newExercise]
     
+    // Update the form with the fresh data
     setValue(`days.${dayIndex}.exerciseCount`, currentExerciseCount + 1)
     setValue(`days.${dayIndex}.exercises`, updatedExercises)
   }
