@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.0.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
+    "framer-motion": "^12.9.2",
     "lucide-react": "^0.488.0",
     "next": "15.3.0",
     "react": "^19.0.0",

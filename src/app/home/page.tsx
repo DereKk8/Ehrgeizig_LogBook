@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Activity, Home, User, Settings, Dumbbell, ArrowRight, Clock, Flame, TrendingUp } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
+import { RecentWorkouts } from '@/components/RecentWorkouts'
 
 interface Workout {
   id: string
@@ -13,7 +14,6 @@ interface Workout {
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState('')
-  const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([])
   const [isButtonHovered, setIsButtonHovered] = useState(false)
   const [showMotivation, setShowMotivation] = useState(false)
   
@@ -153,24 +153,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Recent Workouts */}
-            <div className="rounded-lg border border-[#404040] bg-[#1e1e1e] p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-white">Recent Workouts</h2>
-              <div className="space-y-4">
-                {recentWorkouts.length > 0 ? (
-                  recentWorkouts.map((workout) => (
-                    <div key={workout.id} className="rounded-md bg-[#2d2d2d] p-4">
-                      <h3 className="font-medium text-white">{workout.name}</h3>
-                      <p className="text-sm text-[#b3b3b3]">{workout.date}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-md bg-[#2d2d2d] p-4 text-center text-[#b3b3b3]">
-                    We are working to bring this feature in the future!
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Recent Workouts - Using the new component */}
+            <RecentWorkouts />
           </div>
         </main>
       </div>
