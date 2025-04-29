@@ -233,70 +233,6 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
   const days = watch('days') as Day[]
   const [completedDays, setCompletedDays] = useState<number[]>([])
   
-  // Track if all training days are configured
-  useEffect(() => {
-    // Get indices of all training days (non-rest days)
-    const trainingDayIndices = days
-      .map((day, index) => day.isRestDay ? -1 : index)
-      .filter(index => index !== -1);
-    
-    // Early exit if there are no training days
-    if (trainingDayIndices.length === 0) {
-      if (onAllDaysConfigured) {
-        onAllDaysConfigured(true); // No training days means we're done by default
-      }
-      return;
-    }
-
-    // Check if each training day has proper configuration
-    let allConfigured = true;
-    
-    for (const dayIndex of trainingDayIndices) {
-      // Using a separate variable here to avoid calling the function directly in the effect's body
-      const isComplete = checkDayCompletion(dayIndex);
-      if (!isComplete) {
-        allConfigured = false;
-        break;
-      }
-    }
-    
-    console.log('Training day configuration status:', {
-      trainingDayIndices,
-      completedDays,
-      allConfigured
-    });
-    
-    if (onAllDaysConfigured) {
-      onAllDaysConfigured(allConfigured);
-    }
-  }, [days, completedDays, onAllDaysConfigured]);
-
-  // Find the first non-rest day to start with
-  useEffect(() => {
-    const firstTrainingDayIndex = days.findIndex(day => !day.isRestDay);
-    if (firstTrainingDayIndex !== -1 && currentDay === 0) {
-      setCurrentDay(firstTrainingDayIndex);
-    }
-  }, [days, currentDay]);
-
-  // Initialize sets data for each exercise
-  useEffect(() => {
-    days.forEach((day, dayIndex) => {
-      if (!day.isRestDay) {
-        day.exercises.forEach((exercise, exerciseIndex) => {
-          if (!exercise.setsData || exercise.setsData.length !== exercise.sets) {
-            // Initialize sets without default values - they will be empty inputs
-            const initialSets = Array.from({ length: exercise.sets }, () => ({
-              reps: undefined,
-              weight: undefined
-            }))
-            setValue(`days.${dayIndex}.exercises.${exerciseIndex}.setsData`, initialSets)
-          }
-        })
-      }
-    })
-  }, [days, setValue])
-
   // Check if all exercises for a day have their sets configured
   const checkDayCompletion = useCallback((dayIndex: number) => {
     const day = days[dayIndex];
@@ -350,6 +286,70 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
     
     return isComplete;
   }, [days, completedDays, setCompletedDays]);
+  
+  // Track if all training days are configured
+  useEffect(() => {
+    // Get indices of all training days (non-rest days)
+    const trainingDayIndices = days
+      .map((day, index) => day.isRestDay ? -1 : index)
+      .filter(index => index !== -1);
+    
+    // Early exit if there are no training days
+    if (trainingDayIndices.length === 0) {
+      if (onAllDaysConfigured) {
+        onAllDaysConfigured(true); // No training days means we're done by default
+      }
+      return;
+    }
+
+    // Check if each training day has proper configuration
+    let allConfigured = true;
+    
+    for (const dayIndex of trainingDayIndices) {
+      // Using a separate variable here to avoid calling the function directly in the effect's body
+      const isComplete = checkDayCompletion(dayIndex);
+      if (!isComplete) {
+        allConfigured = false;
+        break;
+      }
+    }
+    
+    console.log('Training day configuration status:', {
+      trainingDayIndices,
+      completedDays,
+      allConfigured
+    });
+    
+    if (onAllDaysConfigured) {
+      onAllDaysConfigured(allConfigured);
+    }
+  }, [days, completedDays, onAllDaysConfigured, checkDayCompletion]);
+
+  // Find the first non-rest day to start with
+  useEffect(() => {
+    const firstTrainingDayIndex = days.findIndex(day => !day.isRestDay);
+    if (firstTrainingDayIndex !== -1 && currentDay === 0) {
+      setCurrentDay(firstTrainingDayIndex);
+    }
+  }, [days, currentDay]);
+
+  // Initialize sets data for each exercise
+  useEffect(() => {
+    days.forEach((day, dayIndex) => {
+      if (!day.isRestDay) {
+        day.exercises.forEach((exercise, exerciseIndex) => {
+          if (!exercise.setsData || exercise.setsData.length !== exercise.sets) {
+            // Initialize sets without default values - they will be empty inputs
+            const initialSets = Array.from({ length: exercise.sets }, () => ({
+              reps: undefined,
+              weight: undefined
+            }))
+            setValue(`days.${dayIndex}.exercises.${exerciseIndex}.setsData`, initialSets)
+          }
+        })
+      }
+    })
+  }, [days, setValue])
 
   // Navigation functions
   const goToNextDay = () => {

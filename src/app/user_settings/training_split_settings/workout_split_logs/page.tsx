@@ -292,7 +292,7 @@ export default function WorkoutSplitLogsPage() {
                   
                   {splits.length === 0 ? (
                     <div className="rounded-lg border border-[#404040] bg-[#1e1e1e] p-8 text-center">
-                      <p className="text-[#b3b3b3]">You haven't created any training splits yet.</p>
+                      <p className="text-[#b3b3b3]">You haven&apos;t created any training splits yet.</p>
                       <Link 
                         href="/user_settings/training_split_settings/set_split" 
                         className="mt-4 inline-block rounded-md bg-[#FF5733] px-4 py-2 text-white hover:bg-[#ff8a5f] transition-colors"
