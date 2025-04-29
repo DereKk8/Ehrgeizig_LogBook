@@ -15,6 +15,7 @@ interface WorkoutSummaryStepProps {
   onDayChanged: (dayId: string, dayName: string, dayIndex: number) => void
   onConfirm: () => void
   setError: (error: string | null) => void
+  safeNavigate?: (url: string) => void
 }
 
 export default function WorkoutSummaryStep({
@@ -24,7 +25,8 @@ export default function WorkoutSummaryStep({
   exercises,
   onDayChanged,
   onConfirm,
-  setError
+  setError,
+  safeNavigate
 }: WorkoutSummaryStepProps) {
   const [dayDropdownOpen, setDayDropdownOpen] = useState(false)
   const [splitDays, setSplitDays] = useState<SplitDay[]>([])
@@ -116,6 +118,13 @@ export default function WorkoutSummaryStep({
   const getDayName = (index: number): string => {
     return Object.values(DayOfWeek)[index] as string
   }
+  
+  // Handle navigation back to home
+  const handleHomeNavigation = () => {
+    if (safeNavigate) {
+      safeNavigate('/home');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -277,10 +286,13 @@ export default function WorkoutSummaryStep({
           Start Workout
         </button>
         
-        <Link href="/home" className="inline-flex items-center justify-center rounded-md bg-[#404040] px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-[#505050]">
+        <button
+          onClick={handleHomeNavigation}
+          className="inline-flex items-center justify-center rounded-md bg-[#404040] px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-[#505050]"
+        >
           <Home className="mr-2 h-5 w-5" />
           Back to Home
-        </Link>
+        </button>
         
         <p className="mt-2 text-xs text-[#b3b3b3]">
           Review your exercise plan before starting
