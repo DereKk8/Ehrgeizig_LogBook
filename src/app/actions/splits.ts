@@ -600,3 +600,74 @@ export async function createSplit(data: FormData, userId: string) {
     }
   }
 }
+
+// Function to delete an exercise and its associated sets
+export async function deleteExercise(exerciseId: string, userId: string) {
+  const supabase = await createAdminClient()
+  
+  try {
+    // Verify user has access to this exercise by checking the chain of relationships
+    // exercise -> split_day -> split -> user
+    const { data: exercise, error: exerciseError } = await supabase
+      .from('exercises')
+      .select('split_day_id')
+      .eq('id', exerciseId)
+      .single()
+    
+    if (exerciseError || !exercise) {
+      console.error('Error finding exercise:', exerciseError)
+      return { success: false, error: 'Exercise not found' }
+    }
+    
+    const { data: splitDay, error: splitDayError } = await supabase
+      .from('split_days')
+      .select('split_id')
+      .eq('id', exercise.split_day_id)
+      .single()
+    
+    if (splitDayError || !splitDay) {
+      console.error('Error finding split day:', splitDayError)
+      return { success: false, error: 'Split day not found' }
+    }
+    
+    const { data: split, error: splitError } = await supabase
+      .from('splits')
+      .select('user_id')
+      .eq('id', splitDay.split_id)
+      .single()
+    
+    if (splitError || !split) {
+      console.error('Error finding split:', splitError)
+      return { success: false, error: 'Split not found' }
+    }
+    
+    // Verify user owns this split
+    if (split.user_id !== userId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    
+    // Delete the exercise (Supabase will handle cascade deletion of associated sets)
+    const { error: exerciseDeleteError } = await supabase
+      .from('exercises')
+      .delete()
+      .eq('id', exerciseId)
+    
+    if (exerciseDeleteError) {
+      console.error('Error deleting exercise:', exerciseDeleteError)
+      return { success: false, error: 'Failed to delete exercise' }
+    }
+    
+    // Revalidate relevant paths
+    revalidatePath('/user_settings/training_split_settings/workout_split_logs')
+    revalidatePath('/user_settings/training_split_settings')
+    revalidatePath('/workout')
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Error in deleteExercise:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'An error occurred while deleting the exercise'
+    }
+  }
+}
