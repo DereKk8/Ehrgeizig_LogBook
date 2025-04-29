@@ -2,8 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { DayOfWeek, Split, SplitDay, Exercise, Set } from '../types/db'
-import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 
 // Type for exercise data with pre-filled sets
@@ -429,5 +427,172 @@ export async function modifyWorkoutSession(data: ModifyWorkoutSessionData) {
   } catch (error) {
     console.error('Error in modifyWorkoutSession:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
+  }
+}
+
+// Type for modifying a specific set
+export type ModifySetData = {
+  setId: string;
+  reps: number;
+  weight: number;
+  userId: string;
+}
+
+// Function to modify a specific set's data
+export async function modifySet(data: ModifySetData) {
+  try {
+    const supabase = await createAdminClient()
+    
+    const { setId, reps, weight, userId } = data
+    
+    // First, verify the set belongs to the user
+    const { data: setData, error: setError } = await supabase
+      .from('sets')
+      .select('session_id')
+      .eq('id', setId)
+      .single()
+    
+    if (setError || !setData) {
+      console.error('Error finding set:', setError)
+      return { success: false, error: 'Set not found' }
+    }
+    
+    // Get the session that the set belongs to
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('user_id')
+      .eq('id', setData.session_id)
+      .single()
+    
+    if (sessionError || !session) {
+      console.error('Error finding session:', sessionError)
+      return { success: false, error: 'Session not found' }
+    }
+    
+    // Verify user owns this session/set
+    if (session.user_id !== userId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    
+    // Update the set
+    const { data: updatedSet, error: updateError } = await supabase
+      .from('sets')
+      .update({
+        reps,
+        weight
+      })
+      .eq('id', setId)
+      .select()
+      .single()
+    
+    if (updateError) {
+      console.error('Error updating set:', updateError)
+      return { success: false, error: 'Failed to update set' }
+    }
+    
+    // Revalidate relevant paths
+    revalidatePath('/user_settings/training_split_settings/workout_split_logs')
+    revalidatePath('/workout')
+    
+    return { success: true, data: updatedSet }
+  } catch (error) {
+    console.error('Error in modifySet:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'An error occurred while updating the set'
+    }
+  }
+}
+
+// Function to get sets for a specific exercise
+export async function getExerciseSets(exerciseId: string, userId: string) {
+  try {
+    const supabase = await createAdminClient()
+    
+    // First, verify the exercise exists and belongs to the user through the chain:
+    // exercise -> split_day -> split -> user
+    const { data: exercise, error: exerciseError } = await supabase
+      .from('exercises')
+      .select('split_day_id')
+      .eq('id', exerciseId)
+      .single()
+    
+    if (exerciseError || !exercise) {
+      console.error('Error finding exercise:', exerciseError)
+      return { success: false, error: 'Exercise not found' }
+    }
+    
+    const { data: splitDay, error: splitDayError } = await supabase
+      .from('split_days')
+      .select('split_id')
+      .eq('id', exercise.split_day_id)
+      .single()
+    
+    if (splitDayError || !splitDay) {
+      console.error('Error finding split day:', splitDayError)
+      return { success: false, error: 'Split day not found' }
+    }
+    
+    const { data: split, error: splitError } = await supabase
+      .from('splits')
+      .select('user_id')
+      .eq('id', splitDay.split_id)
+      .single()
+    
+    if (splitError || !split) {
+      console.error('Error finding split:', splitError)
+      return { success: false, error: 'Split not found' }
+    }
+    
+    // Verify user owns this exercise
+    if (split.user_id !== userId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+    
+    // Find the most recent session with sets for this exercise
+    const { data: sessionsWithSets, error: joinError } = await supabase
+      .from('sets')
+      .select('*, sessions:session_id(id, created_at, date)')
+      .eq('exercise_id', exerciseId)
+      .order('session_id', { ascending: false })
+      
+    if (joinError) {
+      console.error('Error fetching sessions with sets:', joinError)
+      return { success: false, error: joinError.message }
+    }
+    
+    if (!sessionsWithSets || sessionsWithSets.length === 0) {
+      return { success: true, data: { sets: [], lastSessionDate: null } }
+    }
+    
+    // Get the most recent session ID
+    const mostRecentSessionId = sessionsWithSets[0].session_id
+    const lastSessionDate = sessionsWithSets[0].sessions.date
+    
+    // Filter sets from the most recent session and format them
+    const sets = sessionsWithSets
+      .filter(set => set.session_id === mostRecentSessionId)
+      .sort((a, b) => a.set_number - b.set_number)
+      .map(set => ({
+        id: set.id,
+        setNumber: set.set_number,
+        reps: set.reps,
+        weight: set.weight
+      }))
+    
+    return { 
+      success: true, 
+      data: { 
+        sets,
+        lastSessionDate,
+        sessionId: mostRecentSessionId
+      }
+    }
+  } catch (error) {
+    console.error('Error in getExerciseSets:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'An error occurred'
+    }
   }
 }

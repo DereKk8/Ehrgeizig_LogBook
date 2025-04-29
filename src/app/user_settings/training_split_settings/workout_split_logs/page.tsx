@@ -11,14 +11,31 @@ import {
   Calendar, 
   AlertTriangle,
   CheckCircle,
-  X
+  X,
+  Edit2,
+  Save,
+  ListOrdered,
+  Calendar as CalendarIcon
 } from 'lucide-react'
 import { useUser } from '@/lib/hooks/useUser'
-import { getUserSplits, getSplitDays, getSplitDayExercises } from '@/app/actions/workout'
+import { getUserSplits, getSplitDays, getSplitDayExercises, getExerciseSets, modifySet } from '@/app/actions/workout'
 import { deleteExercise } from '@/app/actions/splits'
 import { DayOfWeek, Split, SplitDay, Exercise as ExerciseType } from '@/app/types/db'
 
-type ViewState = 'splits' | 'days' | 'exercises'
+type ViewState = 'splits' | 'days' | 'exercises' | 'sets'
+
+type SetData = {
+  id: string
+  setNumber: number
+  reps: number
+  weight: number
+}
+
+type ExerciseSetsData = {
+  sets: SetData[]
+  lastSessionDate: string | null
+  sessionId: string
+}
 
 export default function WorkoutSplitLogsPage() {
   const [viewState, setViewState] = useState<ViewState>('splits')
@@ -27,10 +44,15 @@ export default function WorkoutSplitLogsPage() {
   const [splitDays, setSplitDays] = useState<SplitDay[]>([])
   const [selectedDay, setSelectedDay] = useState<SplitDay | null>(null)
   const [exercises, setExercises] = useState<ExerciseType[]>([])
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseType | null>(null)
+  const [exerciseSets, setExerciseSets] = useState<ExerciseSetsData | null>(null)
+  const [editingSetId, setEditingSetId] = useState<string | null>(null)
+  const [editValues, setEditValues] = useState<{reps: string, weight: string}>({ reps: '', weight: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{type: 'success' | 'error', message: string} | null>(null)
   const [deleteConfirmation, setDeleteConfirmation] = useState<{exerciseId: string, exerciseName: string} | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
   const { user } = useUser()
 
   // Fetch initial data (splits)
@@ -107,16 +129,122 @@ export default function WorkoutSplitLogsPage() {
     }
   }
 
+  // Handle exercise selection to view sets
+  const handleExerciseSelect = async (exercise: ExerciseType) => {
+    if (!user) return
+    
+    setSelectedExercise(exercise)
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const result = await getExerciseSets(exercise.id, user.id)
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to load exercise sets')
+        return
+      }
+      
+      setExerciseSets(result.data as ExerciseSetsData)
+      setViewState('sets')
+    } catch (err) {
+      console.error('Error fetching exercise sets:', err)
+      setError('An error occurred while loading exercise sets')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Go back to previous view
   const goBack = () => {
-    if (viewState === 'exercises') {
+    if (viewState === 'sets') {
+      setViewState('exercises')
+      setSelectedExercise(null)
+      setExerciseSets(null)
+      setEditingSetId(null)
+    } else if (viewState === 'exercises') {
       setViewState('days')
       setSelectedDay(null)
+      setExercises([])
     } else if (viewState === 'days') {
       setViewState('splits')
       setSelectedSplit(null)
       setSplitDays([])
     }
+  }
+
+  // Start editing a set
+  const startEditingSet = (set: SetData) => {
+    setEditingSetId(set.id)
+    setEditValues({
+      reps: set.reps.toString(),
+      weight: set.weight.toString()
+    })
+  }
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingSetId(null)
+    setEditValues({ reps: '', weight: '' })
+  }
+
+  // Save set changes
+  const saveSetChanges = async () => {
+    if (!editingSetId || !user) return
+    
+    const reps = parseInt(editValues.reps)
+    const weight = parseFloat(editValues.weight)
+    
+    if (isNaN(reps) || reps < 1) {
+      setToast({ type: 'error', message: 'Reps must be at least 1' })
+      return
+    }
+    
+    if (isNaN(weight) || weight < 0) {
+      setToast({ type: 'error', message: 'Weight must be 0 or greater' })
+      return
+    }
+    
+    setIsSaving(true)
+    
+    try {
+      const result = await modifySet({
+        setId: editingSetId,
+        reps,
+        weight,
+        userId: user.id
+      })
+      
+      if (!result.success) {
+        setToast({ type: 'error', message: result.error || 'Failed to update set' })
+        return
+      }
+      
+      // Update local state with the modified set
+      if (exerciseSets) {
+        const updatedSets = exerciseSets.sets.map(set => 
+          set.id === editingSetId ? { ...set, reps, weight } : set
+        )
+        
+        setExerciseSets({
+          ...exerciseSets,
+          sets: updatedSets
+        })
+      }
+      
+      setToast({ type: 'success', message: 'Set updated successfully' })
+      setEditingSetId(null)
+    } catch (err) {
+      console.error('Error updating set:', err)
+      setToast({ type: 'error', message: 'An error occurred while updating the set' })
+    } finally {
+      setIsSaving(false)
+    }
+    
+    // Auto-hide toast after 3 seconds
+    setTimeout(() => {
+      setToast(null)
+    }, 3000)
   }
 
   // Show confirmation dialog
@@ -178,6 +306,18 @@ export default function WorkoutSplitLogsPage() {
     return days[dayOfWeek] || 'Unknown'
   }
 
+  // Format date nicely
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return 'N/A'
+    
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-[#121212] text-white">
       {/* Header */}
@@ -196,6 +336,7 @@ export default function WorkoutSplitLogsPage() {
               {viewState === 'splits' && 'Workout Split Logs'}
               {viewState === 'days' && selectedSplit?.name}
               {viewState === 'exercises' && `${selectedDay?.name} (${getDayName(selectedDay?.day_of_week || 0)})`}
+              {viewState === 'sets' && selectedExercise?.name}
             </h1>
           </div>
           
@@ -409,8 +550,16 @@ export default function WorkoutSplitLogsPage() {
                             {/* Exercise Actions */}
                             <div className="flex space-x-2">
                               <button
+                                onClick={() => handleExerciseSelect(exercise)}
+                                className="rounded-full p-2 hover:bg-blue-500/20 text-blue-400 transition-colors"
+                                title="View and edit sets"
+                              >
+                                <ListOrdered className="h-5 w-5" />
+                              </button>
+                              <button
                                 onClick={() => confirmDeleteExercise(exercise.id, exercise.name)}
                                 className="rounded-full p-2 hover:bg-red-500/20 text-red-500 transition-colors"
+                                title="Delete exercise"
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
@@ -440,6 +589,137 @@ export default function WorkoutSplitLogsPage() {
                         </div>
                       ))}
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sets View */}
+              {viewState === 'sets' && selectedExercise && (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold">{selectedExercise.name} Sets</h2>
+                    
+                    {exerciseSets?.lastSessionDate && (
+                      <div className="flex items-center space-x-2 text-sm text-[#b3b3b3]">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>Last logged on {formatDate(exerciseSets.lastSessionDate)}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {(!exerciseSets || exerciseSets.sets.length === 0) ? (
+                    <div className="rounded-lg border border-[#404040] bg-[#1e1e1e] p-8 text-center">
+                      <p className="text-[#b3b3b3]">No sets data found for this exercise.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="rounded-lg border border-[#404040] bg-[#2d2d2d] overflow-hidden">
+                        <table className="w-full">
+                          <thead className="bg-[#1a1a1a]">
+                            <tr className="border-b border-[#404040]">
+                              <th className="px-4 py-3 text-left text-sm font-medium text-[#b3b3b3]">Set</th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-[#b3b3b3]">Reps</th>
+                              <th className="px-4 py-3 text-left text-sm font-medium text-[#b3b3b3]">Weight</th>
+                              <th className="px-4 py-3 text-right text-sm font-medium text-[#b3b3b3]">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {exerciseSets.sets.map((set) => (
+                              <tr 
+                                key={set.id} 
+                                className={`border-b border-[#404040] ${
+                                  editingSetId === set.id ? 'bg-blue-500/10' : ''
+                                }`}
+                              >
+                                <td className="px-4 py-3 text-sm">
+                                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FF5733]/20 text-[#FF5733]">
+                                    {set.setNumber}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {editingSetId === set.id ? (
+                                    <input 
+                                      type="number"
+                                      min="1"
+                                      value={editValues.reps}
+                                      onChange={(e) => setEditValues({...editValues, reps: e.target.value})}
+                                      className="w-20 rounded bg-[#404040] px-2 py-1 text-white"
+                                    />
+                                  ) : (
+                                    <span>{set.reps}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  {editingSetId === set.id ? (
+                                    <div className="flex items-center space-x-2">
+                                      <input 
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={editValues.weight}
+                                        onChange={(e) => setEditValues({...editValues, weight: e.target.value})}
+                                        className="w-24 rounded bg-[#404040] px-2 py-1 text-white"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <span>{set.weight}</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right">
+                                  {editingSetId === set.id ? (
+                                    <div className="flex items-center justify-end space-x-2">
+                                      <button
+                                        onClick={cancelEditing}
+                                        className="rounded-md border border-[#404040] bg-[#2d2d2d] p-1 text-[#b3b3b3] hover:bg-[#333333]"
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={saveSetChanges}
+                                        disabled={isSaving}
+                                        className="rounded-md bg-blue-500 p-1 text-white hover:bg-blue-600"
+                                      >
+                                        {isSaving ? (
+                                          <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                                        ) : (
+                                          <Save className="h-4 w-4" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => startEditingSet(set)}
+                                      className="rounded-md bg-[#404040] p-1 text-[#b3b3b3] hover:bg-[#505050]"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="rounded-lg border border-[#404040] bg-[#2d2d2d] p-4">
+                        <h3 className="font-medium mb-2">Exercise Details</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-[#b3b3b3]">Default Sets</p>
+                            <p>{selectedExercise.default_sets}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#b3b3b3]">Rest Time</p>
+                            <p>{selectedExercise.rest_time_sec} seconds</p>
+                          </div>
+                          {selectedExercise.note && (
+                            <div className="col-span-2">
+                              <p className="text-xs text-[#b3b3b3]">Note</p>
+                              <p className="text-sm">{selectedExercise.note}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
