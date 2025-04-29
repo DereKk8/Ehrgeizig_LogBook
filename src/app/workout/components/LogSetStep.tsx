@@ -479,6 +479,20 @@ export default function LogSetStep({
           )}
         </div>
         
+        {/* Display Muscle Groups */}
+        {!isEditingExercise && currentExercise.muscleGroups && currentExercise.muscleGroups.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center mt-2 mb-2">
+            {currentExercise.muscleGroups.map((group: string) => (
+              <span 
+                key={group} 
+                className="px-2 py-1 text-xs rounded-full bg-[#FF5733]/10 text-[#FF5733] border border-[#FF5733]/20"
+              >
+                {group}
+              </span>
+            ))}
+          </div>
+        )}
+        
         <div className="mt-2 flex items-center justify-center text-sm text-[#b3b3b3]">
           {!isEditingExercise ? (
             <span className="px-2 py-1 rounded-full bg-[#404040]/50 flex items-center">

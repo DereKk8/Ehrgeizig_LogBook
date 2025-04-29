@@ -224,6 +224,20 @@ export default function WorkoutSummaryStep({
                   {exercise.defaultSets} sets
                 </span>
               </div>
+              
+              {/* Display muscle groups */}
+              {exercise.muscleGroups && exercise.muscleGroups.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {exercise.muscleGroups.map((group: string) => (
+                    <span 
+                      key={group} 
+                      className="px-2 py-1 text-xs rounded-full bg-[#FF5733]/10 text-[#FF5733] border border-[#FF5733]/20"
+                    >
+                      {group}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <div className="mt-2 space-y-2">
                 {exercise.sets.map((set, setIndex) => (

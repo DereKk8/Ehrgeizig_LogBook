@@ -2,6 +2,7 @@
 
 import { useFormContext } from 'react-hook-form'
 import { useState, useEffect } from 'react'
+import { MuscleGroup, MUSCLE_GROUPS } from '@/app/types/db'
 
 const DAYS = [
   'Sunday',
@@ -18,6 +19,7 @@ type Exercise = {
   sets: number
   restTimeSec: number
   note?: string
+  muscleGroups: string[]
 }
 
 type Day = {
@@ -31,8 +33,7 @@ export default function ExerciseSetupStep() {
   const { register, watch, setValue, getValues } = useFormContext()
   const [currentDay, setCurrentDay] = useState(0)
   const days = watch('days') as Day[]
-
-  // Removed the problematic useEffect that was clearing exercise fields on each render
+  const [muscleGroupDropdowns, setMuscleGroupDropdowns] = useState<{[key: string]: boolean}>({})
 
   const handleAddExercise = (dayIndex: number, e: React.MouseEvent) => {
     e.preventDefault()
@@ -48,7 +49,8 @@ export default function ExerciseSetupStep() {
       name: '',
       sets: '',
       restTimeSec: '',
-      note: ''
+      note: '',
+      muscleGroups: []
     }
 
     // Create a completely fresh exercises array instead of appending
@@ -60,6 +62,25 @@ export default function ExerciseSetupStep() {
     // Update the form with the fresh data
     setValue(`days.${dayIndex}.exerciseCount`, currentExerciseCount + 1)
     setValue(`days.${dayIndex}.exercises`, updatedExercises)
+  }
+
+  // Toggle dropdown for muscle group selection
+  const toggleMuscleGroupDropdown = (dayIndex: number, exerciseIndex: number) => {
+    const key = `${dayIndex}-${exerciseIndex}`
+    setMuscleGroupDropdowns(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }))
+  }
+
+  // Handle muscle group selection
+  const handleMuscleGroupSelection = (dayIndex: number, exerciseIndex: number, muscleGroup: string) => {
+    const currentGroups = getValues(`days.${dayIndex}.exercises.${exerciseIndex}.muscleGroups`) || []
+    const newGroups = currentGroups.includes(muscleGroup)
+      ? currentGroups.filter((group: string) => group !== muscleGroup)
+      : [...currentGroups, muscleGroup]
+    
+    setValue(`days.${dayIndex}.exercises.${exerciseIndex}.muscleGroups`, newGroups)
   }
 
   return (
@@ -118,6 +139,65 @@ export default function ExerciseSetupStep() {
                           className="block w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-3 text-white placeholder-[#666666] transition-colors duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733]"
                         />
                       </div>
+                      
+                      {/* Muscle Group Selection */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-white">
+                          Muscle Groups
+                        </label>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => toggleMuscleGroupDropdown(index, exerciseIndex)}
+                            className="flex items-center justify-between w-full rounded-lg border border-[#404040] bg-[#2d2d2d] px-4 py-3 text-white transition-colors duration-200 focus:border-[#FF5733] focus:outline-none focus:ring-1 focus:ring-[#FF5733]"
+                          >
+                            <span>
+                              {(watch(`days.${index}.exercises.${exerciseIndex}.muscleGroups`) || []).length > 0
+                                ? (watch(`days.${index}.exercises.${exerciseIndex}.muscleGroups`) || []).join(', ')
+                                : 'Select muscle groups'}
+                            </span>
+                            <svg className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          
+                          {/* Dropdown Menu */}
+                          {muscleGroupDropdowns[`${index}-${exerciseIndex}`] && (
+                            <div className="absolute z-10 mt-1 w-full rounded-md bg-[#1e1e1e] shadow-lg max-h-60 overflow-auto">
+                              <div className="py-1">
+                                {MUSCLE_GROUPS.map((muscleGroup) => {
+                                  const isSelected = (watch(`days.${index}.exercises.${exerciseIndex}.muscleGroups`) || []).includes(muscleGroup);
+                                  return (
+                                    <div
+                                      key={muscleGroup}
+                                      onClick={() => handleMuscleGroupSelection(index, exerciseIndex, muscleGroup)}
+                                      className={`flex items-center px-4 py-2 text-sm cursor-pointer ${
+                                        isSelected ? 'bg-[#FF5733]/10 text-[#FF5733]' : 'text-white hover:bg-[#404040]'
+                                      }`}
+                                    >
+                                      <div className="flex-shrink-0 mr-2">
+                                        {isSelected && (
+                                          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                          </svg>
+                                        )}
+                                      </div>
+                                      <span className="ml-2">{muscleGroup}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Hidden form field to store selected muscle groups */}
+                        <input
+                          type="hidden"
+                          {...register(`days.${index}.exercises.${exerciseIndex}.muscleGroups`)}
+                        />
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="block text-sm font-medium text-white">

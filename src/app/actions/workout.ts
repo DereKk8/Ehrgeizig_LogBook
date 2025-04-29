@@ -14,6 +14,7 @@ export type ExerciseWithSets = {
   restTimeSec: number
   note?: string
   exerciseOrder: number
+  muscleGroups?: string[]
   sets: Array<{
     setNumber: number
     reps: number
@@ -209,6 +210,8 @@ export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
         restTimeSec: exercise.rest_time_sec,
         note: exercise.note,
         exerciseOrder: exercise.exercise_order,
+        muscleGroups: exercise.muscle_groups ? 
+          Array.isArray(exercise.muscle_groups) ? exercise.muscle_groups : JSON.parse(exercise.muscle_groups || '[]') : [],
         sets
       })
     }
@@ -333,6 +336,7 @@ export type UpdateExerciseData = {
   defaultSets?: number;
   restTimeSec?: number;
   note?: string;
+  muscleGroups?: string[];
 }
 
 // Function to update exercise details during an active session
@@ -340,7 +344,7 @@ export async function updateExerciseDetails(data: UpdateExerciseData) {
   try {
     const supabase = await createClient()
     
-    const { exerciseId, name, defaultSets, restTimeSec, note } = data
+    const { exerciseId, name, defaultSets, restTimeSec, note, muscleGroups } = data
     
     // Build the update object with only the fields that are provided
     const updateData: Record<string, any> = {}
@@ -348,6 +352,7 @@ export async function updateExerciseDetails(data: UpdateExerciseData) {
     if (defaultSets !== undefined) updateData.default_sets = defaultSets
     if (restTimeSec !== undefined) updateData.rest_time_sec = restTimeSec
     if (note !== undefined) updateData.note = note
+    if (muscleGroups !== undefined) updateData.muscle_groups = muscleGroups || null
     
     // Don't proceed if no fields to update
     if (Object.keys(updateData).length === 0) {
