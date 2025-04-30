@@ -191,7 +191,7 @@ export default function Home() {
                         <Star key={i} className="h-5 w-5 fill-[#FFD700] text-[#FFD700]" />
                       ))}
                     </div>
-                    <p className="text-lg md:text-xl mb-8 italic text-white/90">"{testimonial.quote}"</p>
+                    <p className="text-lg md:text-xl mb-8 italic text-white/90">&quot;{testimonial.quote}&quot;</p>
                     <div className="flex items-center">
                       <div className="h-12 w-12 rounded-full bg-[#FF5733]/20 flex items-center justify-center text-[#FF5733]">
                         {testimonial.name.charAt(0)}
@@ -238,7 +238,7 @@ export default function Home() {
                     <div className="w-full h-px bg-gradient-to-r from-transparent via-[#404040] to-transparent mb-8"></div>
                     <div className="mb-8 rounded-lg bg-[#232323] p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <p className="font-medium">Today's Workout</p>
+                        <p className="font-medium">Today&apos;s Workout</p>
                         <span className="text-xs text-[#FF5733] bg-[#FF5733]/10 px-2 py-1 rounded-full">Ready</span>
                       </div>
                       <p className="text-sm text-[#b3b3b3]">Upper Body • PHAT Split</p>

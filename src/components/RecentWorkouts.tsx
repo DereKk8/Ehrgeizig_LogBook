@@ -111,7 +111,7 @@ export function RecentWorkouts() {
     }
     
     fetchRecentWorkouts()
-  }, [])
+  }, [workouts.length]) // Dependency on workouts length to avoid infinite loop
 
   if (loading) {
     return (
