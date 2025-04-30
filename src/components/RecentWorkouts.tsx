@@ -10,8 +10,11 @@ import { getRecentWorkouts, RecentWorkout, WorkoutSummary } from '@/app/actions/
 const muscleColors: Record<string, {light: string, main: string, dark: string}> = {
   'chest': {light: '#512623', main: '#ff5733', dark: '#ffebe5'},
   'back': {light: '#332b25', main: '#e67e22', dark: '#ffecd9'},
+  'legs': {light: '#243327', main: '#2ecc71', dark: '#e3fcec'},
   'shoulders': {light: '#36273d', main: '#9b59b6', dark: '#f4e5ff'},
   'arms': {light: '#26333d', main: '#3498db', dark: '#e1f0fa'},
+  'core': {light: '#3d3626', main: '#f39c12', dark: '#fef2dd'},
+  'cardio': {light: '#41263d', main: '#e74c3c', dark: '#fee5e2'},
   'quads': {light: '#213a2b', main: '#27ae60', dark: '#ebfaef'},
   'hamstrings': {light: '#1e3a2a', main: '#16a085', dark: '#e8f8f5'},
   'calves': {light: '#22352a', main: '#2ecc71', dark: '#e3fcec'},
@@ -19,31 +22,38 @@ const muscleColors: Record<string, {light: string, main: string, dark: string}> 
   'biceps': {light: '#253340', main: '#3498db', dark: '#eaf2fa'},
   'triceps': {light: '#253035', main: '#2c3e50', dark: '#e0e6ed'},
   'forearms': {light: '#2a3132', main: '#7f8c8d', dark: '#f6f6f6'},
+  'traps': {light: '#3d2d3d', main: '#9b59b6', dark: '#f5eef8'},
+  'lats': {light: '#332d22', main: '#d35400', dark: '#fae3cd'},
   'abs': {light: '#3d3626', main: '#f39c12', dark: '#fef2dd'},
   'NA': {light: '#2d2d2d', main: '#7f8c8d', dark: '#e0e0e0'}
 }
 
+// Helper function to format dates correctly
 function formatDate(dateStr: string): string {
-  // Example "2025-04-29" to "Today", "Yesterday" or "Apr 29"
-  const today = new Date()
-  const date = new Date(dateStr)
-
-  console.log('Formatted date:', date.toDateString(), today.toDateString())
+  // Ensure we have a valid date string
+  if (!dateStr) return 'Unknown date';
   
-  // Check if it's today
-  if (date.toDateString() === today.toDateString()) {
-    return 'Today'
+  try {
+    const today = new Date()
+    const date = new Date(dateStr)
+    
+    // Check if it's today
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today'
+    }
+    
+    // Check if it's yesterday
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday'
+    }
+    
+    // Otherwise return formatted date
+    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
+  } catch (e) {
+    return 'Invalid date'
   }
-  
-  // Check if it's yesterday
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday'
-  }
-  
-  // Otherwise return formatted date
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
 }
 
 export function RecentWorkouts() {
@@ -79,7 +89,7 @@ export function RecentWorkouts() {
             }
           })
           
-          // Calculate fake progression - this would be calculated from real data in a future implementation
+          // Calculate progression - this would be calculated from real data in a future implementation
           const avgProgression = workouts.length > 0 ? 
             Math.floor(70 + Math.random() * 20) : 0 // Random progression between 70-90%
             
@@ -199,15 +209,27 @@ export function RecentWorkouts() {
                     <div className="text-xs mb-1 font-medium text-[#FF5733]">
                       {workout.progression}% PROGRESS
                     </div>
-                    <div className="w-16 h-2 bg-[#353535] rounded-full overflow-hidden">
+                    <div className="w-16 h-2 bg-[#353535] overflow-hidden">
                       <div 
-                        className="h-full rounded-full" 
+                        className="h-full animate-pulse-subtle"
                         style={{ 
                           width: `${workout.progression}%`,
-                          background: `linear-gradient(to right, #FF5733aa, #FF5733)` 
+                          background: `linear-gradient(90deg, #FF5733 0%, #ff7755 50%, #FF5733 100%)`,
+                          backgroundSize: '200% 100%',
+                          animation: 'gradientMove 2s ease infinite'
                         }}
                       />
                     </div>
+                    <style jsx global>{`
+                      @keyframes gradientMove {
+                        0% { background-position: 0% 50% }
+                        50% { background-position: 100% 50% }
+                        100% { background-position: 0% 50% }
+                      }
+                      .animate-pulse-subtle {
+                        animation: gradientMove 2s ease infinite;
+                      }
+                    `}</style>
                   </div>
                 )}
               </div>
@@ -284,12 +306,13 @@ export function RecentWorkouts() {
                       {workout.progression}%
                     </div>
                   </div>
-                  <div className="w-full h-1.5 bg-[#353535] rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-[#353535] overflow-hidden">
                     <div 
-                      className="h-full rounded-full" 
+                      className="h-full animate-pulse-subtle"
                       style={{ 
                         width: `${workout.progression}%`,
-                        background: `linear-gradient(to right, #FF5733aa, #FF5733)` 
+                        background: `linear-gradient(90deg, #FF5733 0%, #ff7755 50%, #FF5733 100%)`,
+                        backgroundSize: '200% 100%'
                       }}
                     />
                   </div>
@@ -335,6 +358,16 @@ export function RecentWorkouts() {
               <span className="text-xl font-bold text-white">{summaryData.averageProgression}%</span>
               <TrendingUp className="h-4 w-4 ml-2 text-[#FF5733]" />
             </div>
+            <div className="w-full h-1 bg-[#353535] mt-2 overflow-hidden">
+              <div 
+                className="h-full animate-pulse-subtle"
+                style={{ 
+                  width: `${summaryData.averageProgression}%`,
+                  background: `linear-gradient(90deg, #FF5733 0%, #ff7755 50%, #FF5733 100%)`,
+                  backgroundSize: '200% 100%'
+                }}
+              />
+            </div>
           </div>
           
           <div className="p-3 rounded-lg bg-[#1e1e1e]/60 flex flex-col border border-[#353535]">
@@ -342,7 +375,7 @@ export function RecentWorkouts() {
             <div className="flex items-baseline">
               <span className="text-xl font-bold text-white capitalize">{summaryData.mostFrequentMuscle}</span>
               <div 
-                className="h-4 w-4 ml-2 rounded-full" 
+                className="h-4 w-4 ml-2 rounded-none" 
                 style={{ backgroundColor: muscleColors[summaryData.mostFrequentMuscle]?.main || '#6c757d' }}
               ></div>
             </div>
