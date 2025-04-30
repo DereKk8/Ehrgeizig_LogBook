@@ -106,7 +106,6 @@ interface SessionSet {
 // Function to get most recent sets for a specific exercise
 export async function getMostRecentSets(exerciseId: string) {
   try {
-    console.log(`Fetching most recent sets for exercise ID: ${exerciseId}`)
     const supabase = await createClient()
 
     // First, fetch sessions with their timestamps and join with sets for this exercise
@@ -121,11 +120,8 @@ export async function getMostRecentSets(exerciseId: string) {
     }
 
     if (!sessionsWithSets || sessionsWithSets.length === 0) {
-      console.log(`No sets found for exercise ${exerciseId} in any session`)
       return { success: true, data: [] }
     }
-
-    console.log(`Found ${sessionsWithSets.length} sets across different sessions for exercise ${exerciseId}`)
     
     // Sort sets by session creation time (most recent first)
     sessionsWithSets.sort((a, b) => {
@@ -136,7 +132,6 @@ export async function getMostRecentSets(exerciseId: string) {
     
     // Find the most recent session ID
     const mostRecentSessionId = sessionsWithSets[0].session_id
-    console.log(`Most recent session ID: ${mostRecentSessionId}`)
     
     // Filter only sets from the most recent session
     const mostRecentSets = sessionsWithSets
@@ -150,7 +145,6 @@ export async function getMostRecentSets(exerciseId: string) {
     // Sort by set number
     mostRecentSets.sort((a, b) => a.set_number - b.set_number)
     
-    console.log(`Returning ${mostRecentSets.length} sets from most recent session ${mostRecentSessionId}:`, mostRecentSets)
     return { success: true, data: mostRecentSets }
   } catch (error) {
     console.error('Error in getMostRecentSets:', error)
@@ -161,31 +155,26 @@ export async function getMostRecentSets(exerciseId: string) {
 // Function to load split day exercises with prefilled sets
 export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
   try {
-    console.log(`Loading workout with prefilled sets for split day ID: ${splitDayId}`)
     
     // 1. Get all exercises for the split day
     const exercisesResult = await getSplitDayExercises(splitDayId)
     
     if (!exercisesResult.success) {
-      console.error('Failed to fetch exercises for split day:', exercisesResult.error)
       return exercisesResult
     }
     
     const exercises = exercisesResult.data || []
-    console.log(`Found ${exercises.length} exercises for split day ${splitDayId}`)
     
     const exercisesWithSets: ExerciseWithSets[] = []
     
     // 2. For each exercise, try to get most recent sets
     for (const exercise of exercises) {
-      console.log(`Processing exercise: ${exercise.name} (ID: ${exercise.id})`)
       const setsResult = await getMostRecentSets(exercise.id)
       
       let sets = []
       
       if (setsResult.success && setsResult.data && setsResult.data.length > 0) {
         // Use most recent set data
-        console.log(`Found ${setsResult.data.length} previous sets for exercise ${exercise.name}`)
         sets = setsResult.data.map((set: { set_number: number; reps: number; weight: number; }) => ({
           setNumber: set.set_number,
           reps: set.reps,
@@ -193,7 +182,6 @@ export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
         }))
       } else {
         // Create default empty sets
-        console.log(`No previous sets found for exercise ${exercise.name}. Creating ${exercise.default_sets} default sets.`)
         sets = Array.from({ length: exercise.default_sets }, (_, i) => ({
           setNumber: i + 1,
           reps: 0, // Default reps
@@ -214,7 +202,6 @@ export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
       })
     }
     
-    console.log(`Successfully processed ${exercisesWithSets.length} exercises with their sets`)
     return { success: true, data: exercisesWithSets }
   } catch (error) {
     console.error('Error in loadWorkoutWithPrefilledSets:', error)
@@ -594,5 +581,206 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred'
     }
+  }
+}
+
+// Types for recent workouts
+export interface RecentWorkout {
+  id: string;
+  date: string;
+  splitName: string;
+  dayName: string;
+  exercises: {
+    id: string;
+    name: string;
+    sets: {
+      setNumber: number;
+      reps: number;
+      weight: number;
+    }[];
+    muscleGroup: string;
+  }[];
+  totalSets: number;
+}
+
+export interface WorkoutSummary {
+  totalWorkouts: number;
+  totalSets: number;
+  muscleGroupCounts: Record<string, number>;
+}
+
+// Function to properly normalize muscle group data
+function normalizeMuscleGroup(muscleGroup: string | string[] | null): string {
+  if (!muscleGroup) return 'NA';
+
+  // If it's an array, return the first item
+  if (Array.isArray(muscleGroup) && muscleGroup.length > 0) {
+    return muscleGroup[0].toLowerCase();
+  }
+
+  // If it's a string, handle potential JSON format
+  if (typeof muscleGroup === 'string') {
+    try {
+      // Try to parse as JSON
+      const parsed = JSON.parse(muscleGroup);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed[0].toLowerCase();
+      }
+      return (parsed?.toString() || 'NA').toLowerCase();
+    } catch (e) {
+      // Not valid JSON, treat as a single string
+      return muscleGroup.toLowerCase();
+    }
+  }
+
+  return 'NA';
+}
+
+// Function to get recent workouts for the dashboard
+export async function getRecentWorkouts(limit: number = 3) {
+  try {
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    // Get recent workout sessions with basic information
+    const { data: recentSessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select(`
+        id, 
+        date,
+        split_day
+      `)
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(limit)
+
+    if (sessionsError) {
+      console.error('Error fetching recent sessions:', sessionsError)
+      return { success: false, error: sessionsError.message }
+    }
+    
+    if (!recentSessions || recentSessions.length === 0) {
+      return { 
+        success: true, 
+        data: { 
+          workouts: [], 
+          summary: { 
+            totalWorkouts: 0, 
+            totalSets: 0, 
+            muscleGroupCounts: {} 
+          } 
+        } 
+      }
+    }
+
+    // Get all exercises and sets for these sessions
+    const workouts: RecentWorkout[] = []
+    let totalSets = 0
+    const muscleGroupCounts: Record<string, number> = {}
+    
+    // Process each session to get exercises and sets
+    for (const session of recentSessions) {
+      // Get split day information
+      const { data: splitDay, error: splitDayError } = await supabase
+        .from('split_days')
+        .select('id, name, split_id')
+        .eq('id', session.split_day)
+        .single()
+
+      if (splitDayError || !splitDay) {
+        console.error('Error fetching split day for session:', splitDayError)
+        continue
+      }
+      
+      // Get split name if needed
+      const { data: split, error: splitError } = await supabase
+        .from('splits')
+        .select('name')
+        .eq('id', splitDay.split_id)
+        .single()
+        
+      if (splitError) {
+        console.error('Error fetching split:', splitError)
+        continue
+      }
+
+      // Get exercises with muscle_groups for this split day
+      const { data: exercises, error: exercisesError } = await supabase
+        .from('exercises')
+        .select('id, name, muscle_groups')
+        .eq('split_day_id', splitDay.id)
+        .order('exercise_order', { ascending: true })
+
+      if (exercisesError) {
+        console.error('Error fetching exercises:', exercisesError)
+        continue
+      }
+
+      const exercisesWithSets = []
+      
+      // For each exercise, get its most recent sets using getMostRecentSets
+      for (const exercise of exercises) {
+        // Use getMostRecentSets to get the most recent sets for this exercise
+        const { success, data: mostRecentSets, error } = await getMostRecentSets(exercise.id)
+        
+        if (!success || error || !mostRecentSets || mostRecentSets.length === 0) {
+          continue
+        }
+        
+        // Format the sets properly
+        const formattedSets = mostRecentSets.map(set => ({
+          setNumber: set.set_number,
+          reps: set.reps,
+          weight: set.weight
+        }))
+        
+        // Process muscle groups to ensure proper color mapping
+        const muscleGroup = normalizeMuscleGroup(exercise.muscle_groups);
+        
+        // Update total sets count
+        totalSets += formattedSets.length
+        
+        // Update muscle group counts
+        if (muscleGroup && muscleGroup !== 'NA') {
+          muscleGroupCounts[muscleGroup] = (muscleGroupCounts[muscleGroup] || 0) + formattedSets.length
+        }
+        
+        // Add this exercise with its sets to the collection
+        exercisesWithSets.push({
+          id: exercise.id,
+          name: exercise.name,
+          sets: formattedSets,
+          muscleGroup: muscleGroup
+        })
+      }
+      
+      if (exercisesWithSets.length > 0) {
+        workouts.push({
+          id: session.id,
+          date: session.date,
+          splitName: split?.name || 'Unknown Split',
+          dayName: splitDay.name || 'Unknown Day',
+          exercises: exercisesWithSets,
+          totalSets: exercisesWithSets.reduce((sum, ex) => sum + ex.sets.length, 0)
+        })
+      }
+    }
+
+    // Create the summary data
+    const summary: WorkoutSummary = {
+      totalWorkouts: workouts.length,
+      totalSets: totalSets,
+      muscleGroupCounts
+    }
+
+    return { success: true, data: { workouts, summary } }
+  } catch (error) {
+    console.error('Error in getRecentWorkouts:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
