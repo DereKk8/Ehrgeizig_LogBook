@@ -10,10 +10,16 @@ import { getRecentWorkouts, RecentWorkout, WorkoutSummary } from '@/app/actions/
 const muscleColors: Record<string, {light: string, main: string, dark: string}> = {
   'chest': {light: '#512623', main: '#ff5733', dark: '#ffebe5'},
   'back': {light: '#332b25', main: '#e67e22', dark: '#ffecd9'},
-  'legs': {light: '#243327', main: '#2ecc71', dark: '#e3fcec'},
   'shoulders': {light: '#36273d', main: '#9b59b6', dark: '#f4e5ff'},
   'arms': {light: '#26333d', main: '#3498db', dark: '#e1f0fa'},
-  'core': {light: '#3d3626', main: '#f39c12', dark: '#fef2dd'},
+  'quads': {light: '#213a2b', main: '#27ae60', dark: '#ebfaef'},
+  'hamstrings': {light: '#1e3a2a', main: '#16a085', dark: '#e8f8f5'},
+  'calves': {light: '#22352a', main: '#2ecc71', dark: '#e3fcec'},
+  'glutes': {light: '#303528', main: '#f1c40f', dark: '#fcf3cf'},
+  'biceps': {light: '#253340', main: '#3498db', dark: '#eaf2fa'},
+  'triceps': {light: '#253035', main: '#2c3e50', dark: '#e0e6ed'},
+  'forearms': {light: '#2a3132', main: '#7f8c8d', dark: '#f6f6f6'},
+  'abs': {light: '#3d3626', main: '#f39c12', dark: '#fef2dd'},
   'NA': {light: '#2d2d2d', main: '#7f8c8d', dark: '#e0e0e0'}
 }
 
