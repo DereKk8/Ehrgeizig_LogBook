@@ -2,34 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Calendar, ChevronRight, Dumbbell, TrendingUp, Plus, Trophy, CheckCircle2, BarChart3, ArrowUpRight } from 'lucide-react'
+import { Calendar, ChevronRight, Dumbbell, TrendingUp, Plus, Trophy, CheckCircle2, ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { getRecentWorkouts, RecentWorkout, WorkoutSummary } from '@/app/actions/workout'
 
-interface ExerciseSet {
-  reps: number
-  weight: number
-}
-
-interface Exercise {
-  id: string
-  name: string
-  sets: ExerciseSet[]
-  muscleGroup: string
-}
-
-interface Workout {
-  id: string
-  name: string
-  date: string
-  exercises: Exercise[]
-  totalSets: number
-  splitName?: string
-  dayName?: string
-  progression?: number
-  previousWorkoutId?: string
-}
-
-// Color palette for muscle groups and progress bars - updated to match site aesthetic
+// Color palette for muscle groups and progress bars
 const muscleColors: Record<string, {light: string, main: string, dark: string}> = {
   'chest': {light: '#512623', main: '#ff5733', dark: '#ffebe5'},
   'back': {light: '#332b25', main: '#e67e22', dark: '#ffecd9'},
@@ -37,23 +14,15 @@ const muscleColors: Record<string, {light: string, main: string, dark: string}> 
   'shoulders': {light: '#36273d', main: '#9b59b6', dark: '#f4e5ff'},
   'arms': {light: '#26333d', main: '#3498db', dark: '#e1f0fa'},
   'core': {light: '#3d3626', main: '#f39c12', dark: '#fef2dd'},
-  'cardio': {light: '#41263d', main: '#e74c3c', dark: '#fee5e2'},
   'NA': {light: '#2d2d2d', main: '#7f8c8d', dark: '#e0e0e0'}
-}
-
-function getProgressColor(progress: number): string {
-  if (progress >= 90) return '#ff5733' // Site's primary orange
-  if (progress >= 75) return '#ff7043' // Lighter orange
-  if (progress >= 60) return '#ff9e80' // Pale orange
-  if (progress >= 40) return '#ffb74d' // Amber
-  if (progress >= 20) return '#ffd180' // Light amber
-  return '#ffe0b2' // Very light amber
 }
 
 function formatDate(dateStr: string): string {
   // Example "2025-04-29" to "Today", "Yesterday" or "Apr 29"
   const today = new Date()
   const date = new Date(dateStr)
+
+  console.log('Formatted date:', date.toDateString(), today.toDateString())
   
   // Check if it's today
   if (date.toDateString() === today.toDateString()) {
@@ -71,196 +40,85 @@ function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
 }
 
-const MOCK_WORKOUTS: Workout[] = [
-  {
-    id: '1',
-    name: 'Upper Body Power',
-    date: '2025-04-29',
-    splitName: 'PHAT',
-    dayName: 'Day 1',
-    totalSets: 14,
-    progression: 86,
-    previousWorkoutId: 'prev1',
-    exercises: [
-      {
-        id: 'e1',
-        name: 'Bench Press',
-        muscleGroup: 'chest',
-        sets: [
-          { reps: 5, weight: 175 },
-          { reps: 5, weight: 185 },
-          { reps: 3, weight: 195 }
-        ]
-      },
-      {
-        id: 'e2',
-        name: 'Pull-Ups',
-        muscleGroup: 'back',
-        sets: [
-          { reps: 8, weight: 0 },
-          { reps: 8, weight: 0 },
-          { reps: 6, weight: 0 }
-        ]
-      },
-      {
-        id: 'e3',
-        name: 'OHP',
-        muscleGroup: 'shoulders',
-        sets: [
-          { reps: 5, weight: 95 },
-          { reps: 5, weight: 95 },
-          { reps: 5, weight: 95 }
-        ]
-      },
-      {
-        id: 'e4',
-        name: 'Barbell Curl',
-        muscleGroup: 'arms',
-        sets: [
-          { reps: 10, weight: 65 },
-          { reps: 10, weight: 65 },
-        ]
-      },
-      {
-        id: 'e5',
-        name: 'Skull Crushers',
-        muscleGroup: 'arms',
-        sets: [
-          { reps: 12, weight: 55 },
-          { reps: 10, weight: 55 },
-          { reps: 8, weight: 55 }
-        ]
-      }
-    ]
-  },
-  {
-    id: '2',
-    name: 'Leg Day',
-    date: '2025-04-28',
-    splitName: 'PHAT',
-    dayName: 'Day 2',
-    totalSets: 8,
-    progression: 72,
-    previousWorkoutId: 'prev2',
-    exercises: [
-      {
-        id: 'e4',
-        name: 'Squats',
-        muscleGroup: 'legs',
-        sets: [
-          { reps: 5, weight: 225 },
-          { reps: 5, weight: 225 },
-          { reps: 5, weight: 225 }
-        ]
-      },
-      {
-        id: 'e5',
-        name: 'Romanian Deadlift',
-        muscleGroup: 'legs',
-        sets: [
-          { reps: 8, weight: 185 },
-          { reps: 8, weight: 185 },
-          { reps: 8, weight: 185 }
-        ]
-      },
-      {
-        id: 'e6',
-        name: 'Leg Press',
-        muscleGroup: 'legs',
-        sets: [
-          { reps: 12, weight: 300 },
-          { reps: 12, weight: 300 }
-        ]
-      }
-    ]
-  },
-  {
-    id: '3',
-    name: 'Hypertrophy Upper',
-    date: '2025-04-26',
-    splitName: 'PHAT',
-    dayName: 'Day 3',
-    totalSets: 10,
-    progression: 94,
-    previousWorkoutId: 'prev3',
-    exercises: [
-      {
-        id: 'e6',
-        name: 'Incline DB Press',
-        muscleGroup: 'chest',
-        sets: [
-          { reps: 12, weight: 60 },
-          { reps: 10, weight: 65 },
-          { reps: 8, weight: 70 }
-        ]
-      },
-      {
-        id: 'e7',
-        name: 'Cable Row',
-        muscleGroup: 'back',
-        sets: [
-          { reps: 12, weight: 120 },
-          { reps: 12, weight: 130 },
-          { reps: 10, weight: 140 }
-        ]
-      },
-      {
-        id: 'e8',
-        name: 'Lateral Raises',
-        muscleGroup: 'shoulders',
-        sets: [
-          { reps: 15, weight: 20 },
-          { reps: 15, weight: 20 },
-          { reps: 12, weight: 20 },
-          { reps: 12, weight: 20 }
-        ]
-      }
-    ]
-  }
-]
-
 export function RecentWorkouts() {
-  const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [workouts, setWorkouts] = useState<RecentWorkout[]>([])
   const [summaryData, setSummaryData] = useState({
     totalWorkouts: 0,
     totalSets: 0,
     averageProgression: 0,
-    mostFrequentMuscle: ''
+    mostFrequentMuscle: 'NA'
   })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   
   useEffect(() => {
-    // In a real implementation, this would fetch from Supabase
-    setWorkouts(MOCK_WORKOUTS)
-    
-    // Calculate summary data
-    const totalWorkouts = MOCK_WORKOUTS.length
-    const totalSets = MOCK_WORKOUTS.reduce((sum, workout) => sum + workout.totalSets, 0)
-    const avgProgression = MOCK_WORKOUTS.reduce((sum, workout) => sum + (workout.progression || 0), 0) / totalWorkouts
-    
-    // Find most frequent muscle group
-    const muscleGroups: Record<string, number> = {}
-    MOCK_WORKOUTS.forEach(workout => {
-      workout.exercises.forEach(ex => {
-        muscleGroups[ex.muscleGroup] = (muscleGroups[ex.muscleGroup] || 0) + 1
-      })
-    })
-    
-    let mostFrequent = ''
-    let highestCount = 0
-    Object.entries(muscleGroups).forEach(([muscle, count]) => {
-      if (count > highestCount) {
-        mostFrequent = muscle
-        highestCount = count
+    async function fetchRecentWorkouts() {
+      try {
+        const result = await getRecentWorkouts(3) // Fetch 3 most recent workouts
+        
+        if (result.success && result.data) {
+          setWorkouts(result.data.workouts)
+          
+          // Calculate summary data
+          const { summary } = result.data
+          
+          // Find most frequent muscle group
+          let mostFrequentMuscle = 'NA'
+          let highestCount = 0
+          
+          Object.entries(summary.muscleGroupCounts).forEach(([muscle, count]) => {
+            if (count > highestCount) {
+              mostFrequentMuscle = muscle
+              highestCount = count
+            }
+          })
+          
+          // Calculate fake progression - this would be calculated from real data in a future implementation
+          const avgProgression = workouts.length > 0 ? 
+            Math.floor(70 + Math.random() * 20) : 0 // Random progression between 70-90%
+            
+          setSummaryData({
+            totalWorkouts: summary.totalWorkouts,
+            totalSets: summary.totalSets,
+            averageProgression: avgProgression,
+            mostFrequentMuscle: mostFrequentMuscle
+          })
+        } else {
+          setError(result.error || 'Failed to fetch workouts')
+        }
+      } catch (err) {
+        console.error('Error fetching recent workouts:', err)
+        setError('An error occurred while fetching workout data')
+      } finally {
+        setLoading(false)
       }
-    })
+    }
     
-    setSummaryData({
-      totalWorkouts,
-      totalSets,
-      averageProgression: Math.round(avgProgression),
-      mostFrequentMuscle: mostFrequent
-    })
+    fetchRecentWorkouts()
   }, [])
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-[#404040] bg-gradient-to-br from-[#1e1e1e] to-[#252525] p-6 shadow-lg">
+        <h2 className="mb-4 text-lg font-semibold text-white">Recent Workouts</h2>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#FF5733] border-r-transparent" />
+          <p className="mt-4 text-[#b3b3b3]">Loading your workout history...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-[#404040] bg-gradient-to-br from-[#1e1e1e] to-[#252525] p-6 shadow-lg">
+        <h2 className="mb-4 text-lg font-semibold text-white">Recent Workouts</h2>
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-center text-red-400">
+          <p>{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (workouts.length === 0) {
     return (
@@ -281,17 +139,24 @@ export function RecentWorkouts() {
     )
   }
 
+  // Calculate a progression value for each workout (for display purposes only)
+  // In a real implementation this would be based on weight/rep improvements
+  const workoutsWithProgression = workouts.map((workout, index) => ({
+    ...workout,
+    progression: 85 - (index * 7) + Math.floor(Math.random() * 10) // Fake progression for UI
+  }))
+
   return (
     <div className="rounded-lg border border-[#404040] bg-gradient-to-br from-[#1e1e1e] to-[#252525] p-4 md:p-6 shadow-lg">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-white">Recent Workouts</h2>
-        <Link href="/user_settings/workout_history" className="flex items-center text-sm text-[#FF5733] hover:underline">
+        <Link href="/user_settings/training_split_settings/workout_split_logs" className="flex items-center text-sm text-[#FF5733] hover:underline">
           See All <ChevronRight className="ml-1 h-4 w-4" />
         </Link>
       </div>
 
       <div className="space-y-4">
-        {workouts.map((workout, index) => (
+        {workoutsWithProgression.map((workout, index) => (
           <motion.div
             key={workout.id}
             initial={{ opacity: 0, y: 10 }}
@@ -310,13 +175,13 @@ export function RecentWorkouts() {
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-white">{workout.name}</h3>
+                    <h3 className="font-medium text-white">{workout.dayName}</h3>
                     <div className="flex items-center text-xs text-[#b3b3b3]">
                       <Calendar className="mr-1 h-3 w-3" />
                       {formatDate(workout.date)}
                       {workout.splitName && (
                         <span className="ml-2 rounded-full bg-[#3a3a3a] px-2 py-0.5">
-                          {workout.splitName}: {workout.dayName}
+                          {workout.splitName}
                         </span>
                       )}
                     </div>
@@ -341,7 +206,7 @@ export function RecentWorkouts() {
                 )}
               </div>
 
-              {/* Exercise Tags - Updated styling */}
+              {/* Exercise Tags */}
               <div className="mb-3 flex flex-wrap gap-1">
                 {workout.exercises.slice(0, 4).map((exercise) => (
                   <span 
@@ -373,16 +238,38 @@ export function RecentWorkouts() {
                   <div className="text-xs text-[#b3b3b3] mb-1">Total Sets</div>
                   <div className="text-sm font-medium text-white">{workout.totalSets}</div>
                 </div>
-                <div className="p-2 bg-[#252525] rounded-lg text-center border border-[#353535]" 
-                     style={{ 
-                       background: `linear-gradient(to bottom, #252525, ${muscleColors[workout.exercises[0]?.muscleGroup || 'NA'].light})` 
-                     }}>
-                  <div className="text-xs text-[#b3b3b3] mb-1">Main Focus</div>
-                  <div className="text-sm font-medium text-white capitalize">{workout.exercises[0]?.muscleGroup || 'NA'}</div>
-                </div>
+                
+                {/* Main Focus - Calculated from muscle groups */}
+                {(() => {
+                  // Count sets per muscle group for this workout
+                  const muscleGroupCounts: Record<string, number> = {}
+                  workout.exercises.forEach(ex => {
+                    muscleGroupCounts[ex.muscleGroup] = (muscleGroupCounts[ex.muscleGroup] || 0) + ex.sets.length
+                  })
+                  
+                  // Find most trained muscle group
+                  let mainMuscleGroup = 'NA'
+                  let maxSets = 0
+                  Object.entries(muscleGroupCounts).forEach(([muscle, sets]) => {
+                    if (sets > maxSets && muscle !== 'NA') {
+                      mainMuscleGroup = muscle
+                      maxSets = sets
+                    }
+                  })
+                  
+                  return (
+                    <div className="p-2 bg-[#252525] rounded-lg text-center border border-[#353535]" 
+                         style={{ 
+                           background: `linear-gradient(to bottom, #252525, ${muscleColors[mainMuscleGroup]?.light || muscleColors['NA'].light})` 
+                         }}>
+                      <div className="text-xs text-[#b3b3b3] mb-1">Main Focus</div>
+                      <div className="text-sm font-medium text-white capitalize">{mainMuscleGroup}</div>
+                    </div>
+                  )
+                })()}
               </div>
 
-              {/* Progression bar - Updated styling */}
+              {/* Progression bar */}
               {workout.progression !== undefined && (
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
@@ -405,7 +292,7 @@ export function RecentWorkouts() {
 
               {/* View Details Button */}
               <Link 
-                href={`/user_settings/workout_history?id=${workout.id}`}
+                href={`/user_settings/training_split_settings/workout_split_logs?sessionId=${workout.id}`}
                 className="mt-2 flex w-full items-center justify-center rounded-lg bg-[#2a2a2a] py-2 text-sm font-medium text-white hover:bg-[#333333] transition-colors border border-[#404040]"
               >
                 View Details
@@ -415,7 +302,7 @@ export function RecentWorkouts() {
         ))}
       </div>
       
-      {/* Summary Section - Updated styling */}
+      {/* Summary Section */}
       <div className="mt-6 p-4 rounded-xl border border-[#404040] bg-gradient-to-br from-[#252525] to-[#2a2a2a]">
         <h3 className="text-sm font-medium text-[#b3b3b3] uppercase tracking-wider mb-3">Workout Summary</h3>
         
@@ -457,7 +344,7 @@ export function RecentWorkouts() {
         </div>
         
         <Link
-          href="/user_settings/workout_history"
+          href="/user_settings/training_split_settings/workout_split_logs"
           className="mt-4 flex w-full items-center justify-center rounded-lg border border-[#FF5733]/30 bg-[#1e1e1e] py-2.5 text-sm font-medium text-[#FF5733] hover:bg-[#FF5733]/10 transition-colors"
         >
           View Complete History

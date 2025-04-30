@@ -596,3 +596,241 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
     }
   }
 }
+
+// Types for recent workouts
+export interface RecentWorkout {
+  id: string;
+  date: string;
+  splitName: string;
+  dayName: string;
+  exercises: {
+    id: string;
+    name: string;
+    sets: {
+      setNumber: number;
+      reps: number;
+      weight: number;
+    }[];
+    muscleGroup: string;
+  }[];
+  totalSets: number;
+}
+
+export interface WorkoutSummary {
+  totalWorkouts: number;
+  totalSets: number;
+  muscleGroupCounts: Record<string, number>;
+}
+
+// Function to get recent workouts for the dashboard
+export async function getRecentWorkouts(limit: number = 3) {
+  try {
+    console.log(`[getRecentWorkouts] Starting to fetch recent workouts with limit: ${limit}`)
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      console.log(`[getRecentWorkouts] No authenticated user found`)
+      return { success: false, error: 'User not authenticated' }
+    }
+
+    console.log(`[getRecentWorkouts] Fetching recent sessions for user ID: ${user.id}`)
+    // Get recent workout sessions with basic information
+    const { data: recentSessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select(`
+        id, 
+        date,
+        split_day
+      `)
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(limit)
+
+    if (sessionsError) {
+      console.error(`[getRecentWorkouts] Error fetching recent sessions:`, sessionsError)
+      return { success: false, error: sessionsError.message }
+    }
+
+    console.log(`[getRecentWorkouts] Found ${recentSessions?.length || 0} recent sessions`)
+    
+    if (!recentSessions || recentSessions.length === 0) {
+      console.log(`[getRecentWorkouts] No recent workouts found for user`)
+      return { 
+        success: true, 
+        data: { 
+          workouts: [], 
+          summary: { 
+            totalWorkouts: 0, 
+            totalSets: 0, 
+            muscleGroupCounts: {} 
+          } 
+        } 
+      }
+    }
+
+    // Get all exercises and sets for these sessions
+    const workouts: RecentWorkout[] = []
+    let totalSets = 0
+    const muscleGroupCounts: Record<string, number> = {}
+    
+    // Process each session to get exercises and sets
+    console.log(`[getRecentWorkouts] Processing ${recentSessions.length} sessions`)
+    for (const session of recentSessions) {
+      console.log(`[getRecentWorkouts] Processing session ID: ${session.id}, split_day: ${session.split_day}`)
+      
+      // Get only the required split day information (id and name)
+      const { data: splitDay, error: splitDayError } = await supabase
+        .from('split_days')
+        .select('id, name, split_id')
+        .eq('id', session.split_day)
+        .single()
+
+      if (splitDayError || !splitDay) {
+        console.error(`[getRecentWorkouts] Error fetching split day for session ${session.id}:`, splitDayError)
+        continue
+      }
+      
+      console.log(`[getRecentWorkouts] Found split day: ${splitDay.name} (ID: ${splitDay.id})`)
+      
+      // Get split name if needed
+      const { data: split, error: splitError } = await supabase
+        .from('splits')
+        .select('name')
+        .eq('id', splitDay.split_id)
+        .single()
+        
+      if (splitError) {
+        console.error(`[getRecentWorkouts] Error fetching split for split_day ${splitDay.id}:`, splitError)
+        continue
+      }
+      
+      console.log(`[getRecentWorkouts] Found split: ${split?.name || 'Unknown'} (ID: ${splitDay.split_id})`)
+
+      // Get exercises for this split day
+      const { data: exercises, error: exercisesError } = await supabase
+        .from('exercises')
+        .select('id, name, muscle_groups')
+        .eq('split_day_id', splitDay.id)
+        .order('exercise_order', { ascending: true })
+
+      if (exercisesError) {
+        console.error(`[getRecentWorkouts] Error fetching exercises for split day ${splitDay.id}:`, exercisesError)
+        continue
+      }
+      
+      console.log(`[getRecentWorkouts] Found ${exercises.length} exercises for split day ${splitDay.id}`)
+
+      const exercisesWithSets = []
+      let sessionHasSets = false
+      
+      // For each exercise, get its most recent sets using getMostRecentSets
+      for (const exercise of exercises) {
+        console.log(`[getRecentWorkouts] Getting most recent sets for exercise: ${exercise.name} (ID: ${exercise.id})`)
+        
+        // Use getMostRecentSets to get the most recent sets for this exercise
+        const { success, data: mostRecentSets, error } = await getMostRecentSets(exercise.id)
+        
+        if (!success || error) {
+          console.error(`[getRecentWorkouts] Error fetching most recent sets for exercise ${exercise.id}:`, error)
+          continue
+        }
+        
+        if (!mostRecentSets || mostRecentSets.length === 0) {
+          console.log(`[getRecentWorkouts] No sets found for exercise ${exercise.name}`)
+          continue
+        }
+        
+        console.log(`[getRecentWorkouts] Found ${mostRecentSets.length} most recent sets for exercise ${exercise.name}`)
+        
+        // Format the sets properly
+        const formattedSets = mostRecentSets.map(set => ({
+          setNumber: set.set_number,
+          reps: set.reps,
+          weight: set.weight
+        }))
+        
+        // Check if any of these sets are from the current session
+        // We'll use this to determine if this session has any logged sets
+        const { data: currentSessionSets, error: currentSetError } = await supabase
+          .from('sets')
+          .select('id')
+          .eq('session_id', session.id)
+          .eq('exercise_id', exercise.id)
+          .limit(1)
+          
+        if (!currentSetError && currentSessionSets && currentSessionSets.length > 0) {
+          sessionHasSets = true
+        }
+        
+        // Process muscle groups
+        let muscleGroups: string[] = ['NA']
+        
+        if (exercise.muscle_groups) {
+          console.log(`[getRecentWorkouts] Processing muscle groups for exercise ${exercise.id}: ${typeof exercise.muscle_groups}`)
+          if (typeof exercise.muscle_groups === 'string') {
+            try {
+              // Try to parse as JSON if it's stored as a string
+              const parsed = JSON.parse(exercise.muscle_groups)
+              muscleGroups = Array.isArray(parsed) ? parsed : [exercise.muscle_groups]
+            } catch (e) {
+              // If not valid JSON, treat as a single string value
+              muscleGroups = [exercise.muscle_groups]
+            }
+          } else if (Array.isArray(exercise.muscle_groups)) {
+            muscleGroups = exercise.muscle_groups
+          }
+        }
+        
+        // Update total sets count
+        totalSets += formattedSets.length
+        
+        // Update muscle group counts
+        const primaryMuscleGroup = muscleGroups[0] || 'NA'
+        muscleGroups.forEach(group => {
+          if (group && group !== 'NA') {
+            muscleGroupCounts[group] = (muscleGroupCounts[group] || 0) + formattedSets.length
+          }
+        })
+        
+        // Add this exercise with its sets to the collection
+        exercisesWithSets.push({
+          id: exercise.id,
+          name: exercise.name,
+          sets: formattedSets,
+          muscleGroup: primaryMuscleGroup
+        })
+      }
+      
+      console.log(`[getRecentWorkouts] Session ${session.id} has ${exercisesWithSets.length} exercises with sets`)
+      
+      if (exercisesWithSets.length > 0) {
+        workouts.push({
+          id: session.id,
+          date: session.date,
+          splitName: split?.name || 'Unknown Split',
+          dayName: splitDay.name || 'Unknown Day',
+          exercises: exercisesWithSets,
+          totalSets: exercisesWithSets.reduce((sum, ex) => sum + ex.sets.length, 0)
+        })
+        console.log(`[getRecentWorkouts] Added workout to result: ${splitDay.name} on ${session.date}, has logged sets: ${sessionHasSets}`)
+      }
+    }
+
+    // Create the summary data
+    const summary: WorkoutSummary = {
+      totalWorkouts: workouts.length,
+      totalSets: totalSets,
+      muscleGroupCounts
+    }
+    
+    console.log(`[getRecentWorkouts] Summary - totalWorkouts: ${summary.totalWorkouts}, totalSets: ${summary.totalSets}`)
+    console.log(`[getRecentWorkouts] Muscle group counts:`, summary.muscleGroupCounts)
+
+    return { success: true, data: { workouts, summary } }
+  } catch (error) {
+    console.error('[getRecentWorkouts] Unexpected error:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
+  }
+}
