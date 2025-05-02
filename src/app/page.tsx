@@ -1,6 +1,5 @@
 'use client'
 
-import Image from "next/image";
 import Link from "next/link";
 import { Activity, Dumbbell, ChevronRight, Calendar, LineChart, Star, Quote } from "lucide-react";
 import { useEffect, useState } from "react";

@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react'
 import { getSplitDays, loadWorkoutWithPrefilledSets } from '@/app/actions/workout'
 import { ExerciseWithSets } from '@/app/actions/workout'
-import { Clock, ChevronDown, Dumbbell, RotateCcw, ChevronUp, Home } from 'lucide-react'
+import { Clock, ChevronDown, Dumbbell, RotateCcw, Home } from 'lucide-react'
 import { DayOfWeek, SplitDay } from '@/app/types/db'
-import Link from 'next/link'
 
 interface WorkoutSummaryStepProps {
   splitId: string

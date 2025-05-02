@@ -20,7 +20,7 @@ import {
 import { useUser } from '@/lib/hooks/useUser'
 import { getUserSplits, getSplitDays, getSplitDayExercises, getExerciseSets, modifySet } from '@/app/actions/workout'
 import { deleteExercise } from '@/app/actions/splits'
-import { DayOfWeek, Split, SplitDay, Exercise as ExerciseType } from '@/app/types/db'
+import {Split, SplitDay, Exercise as ExerciseType } from '@/app/types/db'
 
 type ViewState = 'splits' | 'days' | 'exercises' | 'sets'
 

@@ -6,8 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { ArrowLeft, Check, Loader2, AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter, useParams } from 'next/navigation'
-import { createSplit, getSplitById, updateSplit } from '@/app/actions/splits'
+import {getSplitById, updateSplit } from '@/app/actions/splits'
 import { useUser } from '@/lib/hooks/useUser'
 import React from 'react'
 import SplitNameStep from '../components/SplitNameStep'
@@ -27,10 +26,6 @@ const DAYS = [
   'Saturday'
 ] as const
 
-// Define validation schemas for each step
-const splitNameSchema = z.object({
-  splitName: z.string().min(1, 'Split name is required')
-})
 
 const exerciseSchema = z.object({
   name: z.string().min(1, 'Exercise name is required'),
@@ -95,7 +90,6 @@ export default function EditSplitPage({ params }: { params: Promise<{ splitId: s
   const [allDaysConfigured, setAllDaysConfigured] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submittedData, setSubmittedData] = useState<FormData | null>(null)
-  const router = useRouter()
   const { user } = useUser()
   
   // Properly unwrap the params using React.use()
@@ -400,38 +394,6 @@ export default function EditSplitPage({ params }: { params: Promise<{ splitId: s
       setIsSubmitting(false)
       setShowConfirmation(false)
     }
-  }
-
-  // Update day type (rest/training)
-  const handleDayTypeChange = (dayIndex: number, isRestDay: boolean) => {
-    const currentDays = methods.getValues('days')
-    const updatedDays = [...currentDays]
-    
-    if (isRestDay) {
-      // Set rest day defaults
-      updatedDays[dayIndex] = {
-        isRestDay: true,
-        workoutName: 'Rest Day',
-        exerciseCount: 0,
-        exercises: [{
-          name: 'Rest',
-          sets: 1,
-          restTimeSec: 0,
-          note: 'Rest day - no exercises',
-          setsData: []
-        }]
-      }
-    } else {
-      // Clear for training day
-      updatedDays[dayIndex] = {
-        isRestDay: false,
-        workoutName: '',
-        exerciseCount: 0,
-        exercises: []
-      }
-    }
-    
-    methods.setValue('days', updatedDays, { shouldValidate: true })
   }
 
   // Show success confirmation page if submitted

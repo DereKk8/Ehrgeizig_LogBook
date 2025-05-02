@@ -95,13 +95,6 @@ export async function getSplitDayExercises(splitDayId: string) {
   }
 }
 
-// Type for session set data
-interface SessionSet {
-  session_id: string;
-  reps: number;
-  weight: number;
-  set_number: number;
-}
 
 // Function to get most recent sets for a specific exercise
 export async function getMostRecentSets(exerciseId: string) {
@@ -332,7 +325,7 @@ export async function updateExerciseDetails(data: UpdateExerciseData) {
     const { exerciseId, name, defaultSets, restTimeSec, note, muscleGroups } = data
     
     // Build the update object with only the fields that are provided
-    const updateData: Record<string, any> = {}
+    const updateData: Record<string, unknown> = {}
     if (name !== undefined) updateData.name = name
     if (defaultSets !== undefined) updateData.default_sets = defaultSets
     if (restTimeSec !== undefined) updateData.rest_time_sec = restTimeSec
@@ -629,6 +622,7 @@ function normalizeMuscleGroup(muscleGroup: string | string[] | null): string {
       return (parsed?.toString() || 'NA').toLowerCase();
     } catch (e) {
       // Not valid JSON, treat as a single string
+      console.error('Error parsing muscle group:', e);
       return muscleGroup.toLowerCase();
     }
   }

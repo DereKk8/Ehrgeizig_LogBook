@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { Edit, X } from 'lucide-react'
-import { ExerciseWithSets, LogSetData, logExerciseSets } from '@/app/actions/workout'
+import { ExerciseWithSets} from '@/app/actions/workout'
 
 interface ReLogExerciseModeProps {
   isRelogging: boolean
@@ -19,15 +18,9 @@ interface ReLogExerciseModeProps {
 
 export default function ReLogExerciseMode({
   isRelogging,
-  sessionId,
-  currentExercise,
-  currentExerciseIndex,
-  exerciseSets,
   handleRelogExercise,
   handleCancelRelog,
-  isExerciseCompleted,
-  setToast,
-  setError
+  isExerciseCompleted
 }: ReLogExerciseModeProps) {
   
   return (

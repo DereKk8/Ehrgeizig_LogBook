@@ -10,9 +10,28 @@ const compat = new FlatCompat({
   recommendedConfig: { plugins: {} }
 });
 
-export default [
-  {
-    ignores: [".next/**", "node_modules/**"]
-  },
-  ...compat.extends("next/core-web-vitals")
-];
+const eslintConfig = [
+  ...compat.config({
+    extends: [
+      'next/core-web-vitals', 
+      'next/typescript',
+      'plugin:@typescript-eslint/recommended',
+      'prettier'
+    ],
+    rules: {
+      // Custom rules can be added here
+      'react/no-unescaped-entities': 'warn',
+      '@next/next/no-img-element': 'warn',
+      'jsx-a11y/alt-text': 'error', // Enforce accessibility
+      'react-hooks/rules-of-hooks': 'error', // Enforce Rules of Hooks
+      'react-hooks/exhaustive-deps': 'warn' // Checks effect dependencies
+    },
+    settings: {
+      next: {
+        rootDir: '.',
+      },
+    },
+  }),
+]
+
+export default eslintConfig

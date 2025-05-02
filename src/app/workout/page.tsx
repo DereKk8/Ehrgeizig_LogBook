@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useUser } from '@/lib/hooks/useUser'
-import { ArrowLeft, ArrowRight, Calendar, Dumbbell, CheckCircle, AlertCircle, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Dumbbell, CheckCircle, AlertCircle, X } from 'lucide-react'
 import { ExerciseWithSets, createWorkoutSession } from '../actions/workout'
 import SelectSplitStep from './components/SelectSplitStep'
 import LoadWorkoutDayStep from './components/LoadWorkoutDayStep'
@@ -44,7 +43,6 @@ export default function WorkoutPage() {
   
   const router = useRouter()
   const pathname = usePathname()
-  const { user } = useUser()
   
   // Handle browser back/refresh/close during active workout
   useEffect(() => {

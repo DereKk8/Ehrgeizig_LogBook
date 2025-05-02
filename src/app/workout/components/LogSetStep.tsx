@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dumbbell, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Edit, X, Plus, Minus, Save, Settings } from 'lucide-react'
-import { ExerciseWithSets, LogSetData, logExerciseSets, updateExerciseDetails, ModifyWorkoutSessionData } from '@/app/actions/workout'
-import { useUser } from '@/lib/hooks/useUser'
+import { Dumbbell, Clock, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X, Plus, Minus, Save, Settings } from 'lucide-react'
+import { ExerciseWithSets, LogSetData, logExerciseSets, updateExerciseDetails,} from '@/app/actions/workout'
 import ReLogHandler from './relogging/ReLogHandler'
 
 interface LogSetStepProps {
@@ -17,7 +16,6 @@ interface LogSetStepProps {
 }
 
 export default function LogSetStep({
-  splitDayId,
   sessionId,
   exercises,
   onExerciseCompleted,
@@ -25,7 +23,7 @@ export default function LogSetStep({
   setError,
   onExerciseUpdated
 }: LogSetStepProps) {
-  const [loading, setLoading] = useState(false)
+  const [loading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isUpdatingExercise, setIsUpdatingExercise] = useState(false)
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
@@ -43,7 +41,6 @@ export default function LogSetStep({
   const [isReloggingActive, setIsReloggingActive] = useState<boolean>(false)
 
   const currentExercise = exercises[currentExerciseIndex]
-  const { user } = useUser()
 
   // Initialize set values when component mounts
   useEffect(() => {
@@ -100,7 +97,7 @@ export default function LogSetStep({
       if (exerciseFormValues.defaultSets > currentSetsCount) {
         const additionalSets = Array.from(
           { length: exerciseFormValues.defaultSets - currentSetsCount },
-          (_, i) => ({
+          () => ({
             reps: 0,
             weight: 0
           })
