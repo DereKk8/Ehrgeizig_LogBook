@@ -2,17 +2,14 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowLeft, Calendar, ClipboardList, Download, History, Plus, Edit2, Loader2, Dumbbell } from "lucide-react"
+import { ArrowLeft, ClipboardList, Download, History, Plus, Edit2, Loader2, Dumbbell } from "lucide-react"
 import { getUserSplits } from "@/app/actions/workout"
-import { useUser } from "@/lib/hooks/useUser"
 import { Split } from "@/app/types/db"
 
 export default function TrainingSplitSettingsPage() {
   const [splits, setSplits] = useState<Split[]>([])
   const [isLoadingSplits, setIsLoadingSplits] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useUser()
 
   // Fetch user's splits on component mount
   useEffect(() => {

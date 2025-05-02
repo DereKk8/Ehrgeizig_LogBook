@@ -1,8 +1,8 @@
 'use client'
 
 import { useFormContext } from 'react-hook-form'
-import { useState, useEffect } from 'react'
-import { MuscleGroup, MUSCLE_GROUPS } from '@/app/types/db'
+import { useState } from 'react'
+import { MUSCLE_GROUPS } from '@/app/types/db'
 
 const DAYS = [
   'Sunday',

@@ -1,8 +1,7 @@
 'use client'
 
-import { CheckCircle, Dumbbell, ArrowRight } from 'lucide-react'
+import { CheckCircle, Dumbbell } from 'lucide-react'
 import { ExerciseWithSets } from '@/app/actions/workout'
-import { useRouter } from 'next/navigation'
 
 interface StartWorkoutStepProps {
   splitName: string
@@ -17,7 +16,6 @@ export default function StartWorkoutStep({
   exercises, 
   isCompleted = false 
 }: StartWorkoutStepProps) {
-  const router = useRouter()
   
   return (
     <div className="flex flex-col items-center justify-center py-8">

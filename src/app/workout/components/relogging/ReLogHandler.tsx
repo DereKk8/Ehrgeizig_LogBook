@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Edit, X, CheckCircle } from 'lucide-react'
+import {X, CheckCircle } from 'lucide-react'
 import { ExerciseWithSets, LogSetData, logExerciseSets } from '@/app/actions/workout'
 import ReLogExerciseMode from './ReLogExerciseMode'
 

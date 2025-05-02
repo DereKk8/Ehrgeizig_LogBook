@@ -1,16 +1,11 @@
 'use client'
 
 import Link from "next/link"
-import { Activity, Home, User, Settings, Dumbbell, ArrowRight, Clock, Flame, TrendingUp } from "lucide-react"
+import { Activity, Home, User, Dumbbell, ArrowRight, Clock, Flame, TrendingUp } from "lucide-react"
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 import { RecentWorkouts } from '@/components/RecentWorkouts'
 
-interface Workout {
-  id: string
-  name: string
-  date: string
-}
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState('')

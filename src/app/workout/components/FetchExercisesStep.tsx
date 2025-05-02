@@ -18,7 +18,7 @@ export default function FetchExercisesStep({
   onExercisesLoaded, 
   setError 
 }: FetchExercisesStepProps) {
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   
   // Fetch exercises and auto-advance to the next step
   useEffect(() => {

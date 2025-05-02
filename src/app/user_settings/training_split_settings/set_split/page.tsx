@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { ArrowLeft, Check, Loader2, AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createSplit } from '@/app/actions/splits'
 import { useUser } from '@/lib/hooks/useUser'
 import SplitNameStep from './components/SplitNameStep'
@@ -25,11 +24,6 @@ const DAYS = [
   'Friday',
   'Saturday'
 ] as const
-
-// Define validation schemas for each step
-const splitNameSchema = z.object({
-  splitName: z.string().min(1, 'Split name is required')
-})
 
 const exerciseSchema = z.object({
   name: z.string().min(1, 'Exercise name is required'),
@@ -92,7 +86,6 @@ export default function SetSplitPage() {
   const [allDaysConfigured, setAllDaysConfigured] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submittedData, setSubmittedData] = useState<FormData | null>(null)
-  const router = useRouter()
   const { user } = useUser()
 
   const methods = useForm<FormData>({
@@ -292,31 +285,6 @@ export default function SetSplitPage() {
     }
   }
 
-  // Update day type (rest/training)
-  const handleDayTypeChange = (dayIndex: number, isRestDay: boolean) => {
-    const currentDays = methods.getValues('days')
-    const updatedDays = [...currentDays]
-    
-    if (isRestDay) {
-      // Set rest day defaults
-      updatedDays[dayIndex] = {
-        isRestDay: true,
-        workoutName: 'Rest Day',
-        exerciseCount: 0,
-        exercises: [] // Keep exercises array empty for rest days
-      }
-    } else {
-      // Clear for training day
-      updatedDays[dayIndex] = {
-        isRestDay: false,
-        workoutName: '',
-        exerciseCount: 0,
-        exercises: []
-      }
-    }
-    
-    methods.setValue('days', updatedDays, { shouldValidate: true })
-  }
 
   // Show success confirmation page if submitted
   if (isSubmitted && submittedData) {

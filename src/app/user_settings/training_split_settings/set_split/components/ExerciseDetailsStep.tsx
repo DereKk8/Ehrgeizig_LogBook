@@ -36,14 +36,6 @@ type Day = {
   exercises: Exercise[]
 }
 
-// Type for our local input state
-type InputState = {
-  [key: string]: {
-    reps: string;
-    weight: string;
-  }
-};
-
 type Props = {
   onAllDaysConfigured?: (isConfigured: boolean) => void;
 }
@@ -53,7 +45,6 @@ const SetItem = memo(({
   dayIndex, 
   exerciseIndex, 
   setIndex,
-  register,
   watch,
   setValue,
   checkDayCompletion
@@ -61,9 +52,9 @@ const SetItem = memo(({
   dayIndex: number
   exerciseIndex: number
   setIndex: number
-  register: any
-  watch: any
-  setValue: any
+  register: ReturnType<typeof useFormContext>['register']
+  watch: ReturnType<typeof useFormContext>['watch']
+  setValue: ReturnType<typeof useFormContext>['setValue']
   checkDayCompletion: (dayIndex: number) => boolean
 }) => {
   // Get current values
@@ -146,8 +137,7 @@ const SetItem = memo(({
 SetItem.displayName = 'SetItem';
 
 // Define ExerciseCard component outside the parent component
-const ExerciseCard = memo(({ 
-  day, 
+const ExerciseCard = memo(({  
   index, 
   exerciseIndex, 
   exercise,
@@ -156,13 +146,13 @@ const ExerciseCard = memo(({
   setValue,
   checkDayCompletion
 }: { 
-  day: any
+  day: Day
   index: number
   exerciseIndex: number
-  exercise: any
-  register: any
-  watch: any
-  setValue: any
+  exercise: Exercise
+  register: ReturnType<typeof useFormContext>['register']
+  watch: ReturnType<typeof useFormContext>['watch']
+  setValue: ReturnType<typeof useFormContext>['setValue']
   checkDayCompletion: (dayIndex: number) => boolean
 }) => {
   if (!exercise) return null;
@@ -228,7 +218,7 @@ const ExerciseCard = memo(({
 ExerciseCard.displayName = 'ExerciseCard';
 
 export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
-  const { register, watch, setValue, getValues } = useFormContext()
+  const { register, watch, setValue } = useFormContext()
   const [currentDay, setCurrentDay] = useState(0)
   const days = watch('days') as Day[]
   const [completedDays, setCompletedDays] = useState<number[]>([])

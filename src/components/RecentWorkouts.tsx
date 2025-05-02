@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Calendar, ChevronRight, Dumbbell, TrendingUp, Plus, Trophy, CheckCircle2, ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { getRecentWorkouts, RecentWorkout, WorkoutSummary } from '@/app/actions/workout'
+import { getRecentWorkouts, RecentWorkout } from '@/app/actions/workout'
 
 // Color palette for muscle groups and progress bars
 const muscleColors: Record<string, {light: string, main: string, dark: string}> = {
@@ -52,6 +52,7 @@ function formatDate(dateStr: string): string {
     // Otherwise return formatted date
     return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
   } catch (e) {
+    console.log('Error formatting date:', e)
     return 'Invalid date'
   }
 }
