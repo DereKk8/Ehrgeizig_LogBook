@@ -43,7 +43,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#121212]">
       {/* Header/Navbar */}
-      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-[#404040] bg-[#1e1e1e] px-4 shadow-sm md:px-6">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-[#404040] bg-[#1e1e1e] px-4 shadow-sm md:px-6">
         <div className="flex items-center">
           <Link href="/home" className="flex items-center">
             <Activity className="h-6 w-6 text-[#FF5733]" />
@@ -84,7 +84,7 @@ export default function DashboardPage() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 pt-6 md:p-6">
           {/* Welcome message */}
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold text-white md:text-3xl">Welcome, {userName || 'Athlete'}</h1>
