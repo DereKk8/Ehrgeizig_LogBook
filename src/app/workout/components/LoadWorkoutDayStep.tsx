@@ -64,8 +64,7 @@ export default function LoadWorkoutDayStep({
           setIsRestDay(true)
           setLoading(false)
         }
-      } catch (error) {
-        console.error('Error in fetchSplitDays:', error)
+      } catch {
         setError('An error occurred while loading workout days')
         setSplitDays([])
         setLoading(false)

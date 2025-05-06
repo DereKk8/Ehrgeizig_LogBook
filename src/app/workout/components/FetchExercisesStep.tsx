@@ -43,8 +43,7 @@ export default function FetchExercisesStep({
         setTimeout(() => {
           onExercisesLoaded(result.data)
         }, 1500)
-      } catch (error) {
-        console.error('Error in loadWorkoutData:', error)
+      } catch {
         setError('An error occurred while loading workout exercises')
       }
     }

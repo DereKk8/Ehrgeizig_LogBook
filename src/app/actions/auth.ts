@@ -20,7 +20,6 @@ export async function createUserProfile(userId: string, email: string, userName:
       .single()
 
     if (error) {
-      console.error('Supabase error:', error)
       throw new Error(`Failed to create user profile: ${error.message}`)
     }
 
@@ -31,7 +30,6 @@ export async function createUserProfile(userId: string, email: string, userName:
     revalidatePath('/')
     return { success: true, data }
   } catch (error) {
-    console.error('Error in createUserProfile:', error)
     throw error
   }
 }
@@ -48,13 +46,11 @@ export async function updateRememberMeDevice(userId: string, rememberMe: boolean
       .single()
 
     if (error) {
-      console.error('Supabase error:', error)
       throw new Error(`Failed to update remember me preference: ${error.message}`)
     }
 
     return { success: true, data }
   } catch (error) {
-    console.error('Error in updateRememberMeDevice:', error)
     throw error
   }
 }
@@ -70,13 +66,11 @@ export async function handleLogout(userId: string) {
       .eq('id', userId)
 
     if (updateError) {
-      console.error('Error updating remember_me_device:', updateError)
       throw new Error(`Failed to clear remember me preference: ${updateError.message}`)
     }
 
     return { success: true }
   } catch (error) {
-    console.error('Error in handleLogout:', error)
     throw error
   }
 }
@@ -92,7 +86,6 @@ export async function deleteUserAccount(userId: string) {
       .eq('user_id', userId)
 
     if (sessionIdsError) {
-      console.error('Error fetching session IDs:', sessionIdsError)
       throw new Error(`Failed to fetch user's session IDs: ${sessionIdsError.message}`)
     }
 
@@ -104,7 +97,6 @@ export async function deleteUserAccount(userId: string) {
         .in('session_id', sessionIds.map(s => s.id))
 
       if (setsError) {
-        console.error('Error deleting sets:', setsError)
         throw new Error(`Failed to delete user's sets: ${setsError.message}`)
       }
     }
@@ -116,7 +108,6 @@ export async function deleteUserAccount(userId: string) {
       .eq('user_id', userId)
 
     if (sessionsError) {
-      console.error('Error deleting sessions:', sessionsError)
       throw new Error(`Failed to delete user's sessions: ${sessionsError.message}`)
     }
 
@@ -127,7 +118,6 @@ export async function deleteUserAccount(userId: string) {
       .eq('user_id', userId)
 
     if (splitIdsError) {
-      console.error('Error fetching split IDs:', splitIdsError)
       throw new Error(`Failed to fetch user's split IDs: ${splitIdsError.message}`)
     }
 
@@ -139,7 +129,6 @@ export async function deleteUserAccount(userId: string) {
         .in('split_id', splitIds.map(s => s.id))
 
       if (splitDayIdsError) {
-        console.error('Error fetching split day IDs:', splitDayIdsError)
         throw new Error(`Failed to fetch user's split day IDs: ${splitDayIdsError.message}`)
       }
 
@@ -151,7 +140,6 @@ export async function deleteUserAccount(userId: string) {
           .in('split_day_id', splitDayIds.map(sd => sd.id))
 
         if (exercisesError) {
-          console.error('Error deleting exercises:', exercisesError)
           throw new Error(`Failed to delete user's exercises: ${exercisesError.message}`)
         }
       }
@@ -163,7 +151,6 @@ export async function deleteUserAccount(userId: string) {
         .in('split_id', splitIds.map(s => s.id))
 
       if (splitDaysError) {
-        console.error('Error deleting split days:', splitDaysError)
         throw new Error(`Failed to delete user's split days: ${splitDaysError.message}`)
       }
     }
@@ -175,7 +162,6 @@ export async function deleteUserAccount(userId: string) {
       .eq('user_id', userId)
 
     if (splitsError) {
-      console.error('Error deleting splits:', splitsError)
       throw new Error(`Failed to delete user's splits: ${splitsError.message}`)
     }
 
@@ -186,7 +172,6 @@ export async function deleteUserAccount(userId: string) {
       .eq('id', userId)
 
     if (userError) {
-      console.error('Error deleting user profile:', userError)
       throw new Error(`Failed to delete user profile: ${userError.message}`)
     }
 
@@ -194,13 +179,11 @@ export async function deleteUserAccount(userId: string) {
     const { error: authError } = await supabase.auth.admin.deleteUser(userId)
     
     if (authError) {
-      console.error('Error deleting auth user:', authError)
       throw new Error(`Failed to delete auth user: ${authError.message}`)
     }
 
     return { success: true }
   } catch (error) {
-    console.error('Error in deleteUserAccount:', error)
     throw error
   }
 }

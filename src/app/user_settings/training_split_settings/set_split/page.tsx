@@ -194,15 +194,15 @@ export default function SetSplitPage() {
     
     // Get current form values
     const formData = methods.getValues()
-    console.log('Current form values:', JSON.stringify(formData, null, 2))
+
     
     // Validate the entire form
     const isValid = await methods.trigger()
-    console.log('Form validation result:', isValid)
+
     
     if (!isValid) {
       const errors = methods.formState.errors
-      console.log('Validation errors:', JSON.stringify(errors, null, 2))
+
       
       const errorMessages = Object.entries(errors).map(([key, value]) => {
         if (value.message) return value.message
@@ -263,10 +263,10 @@ export default function SetSplitPage() {
       setError(null)
 
       const formData = methods.getValues()
-      console.log('Submitting form data:', JSON.stringify(formData, null, 2))
+
       
       const result = await createSplit(formData, user.id)
-      console.log('Create split result:', result)
+
 
       if (!result.success) {
         throw new Error(result.error)
@@ -278,7 +278,7 @@ export default function SetSplitPage() {
       setShowConfirmation(false)
       
     } catch (err) {
-      console.error('Error submitting form:', err)
+
       setError(err instanceof Error ? err.message : 'An error occurred while saving your split')
       setIsSubmitting(false)
       setShowConfirmation(false)

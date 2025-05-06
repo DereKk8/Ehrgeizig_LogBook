@@ -38,13 +38,11 @@ export async function getUserSplits() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error fetching splits:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true, data: splits }
   } catch (error) {
-    console.error('Error in getUserSplits:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -61,13 +59,11 @@ export async function getSplitDays(splitId: string) {
       .order('day_of_week', { ascending: true })
 
     if (error) {
-      console.error('Error fetching split days:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true, data: splitDays }
   } catch (error) {
-    console.error('Error in getSplitDays:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -84,13 +80,11 @@ export async function getSplitDayExercises(splitDayId: string) {
       .order('exercise_order', { ascending: true })
 
     if (error) {
-      console.error('Error fetching exercises:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true, data: exercises }
   } catch (error) {
-    console.error('Error in getSplitDayExercises:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -108,7 +102,6 @@ export async function getMostRecentSets(exerciseId: string) {
       .eq('exercise_id', exerciseId)
       
     if (joinError) {
-      console.error('Error fetching sets with sessions:', joinError)
       return { success: false, error: joinError.message }
     }
 
@@ -140,8 +133,7 @@ export async function getMostRecentSets(exerciseId: string) {
     
     return { success: true, data: mostRecentSets }
   } catch (error) {
-    console.error('Error in getMostRecentSets:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
+        return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
 
@@ -197,7 +189,6 @@ export async function loadWorkoutWithPrefilledSets(splitDayId: string) {
     
     return { success: true, data: exercisesWithSets }
   } catch (error) {
-    console.error('Error in loadWorkoutWithPrefilledSets:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -236,13 +227,11 @@ export async function createWorkoutSession(splitDayId: string) {
       .single()
 
     if (error) {
-      console.error('Error creating workout session:', error)
       return { success: false, error: error.message }
     }
 
     return { success: true, data: session }
   } catch (error) {
-    console.error('Error in createWorkoutSession:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -262,7 +251,6 @@ export async function logExerciseSets(data: LogSetData) {
       .eq('exercise_id', exerciseId)
     
     if (checkError) {
-      console.error('Error checking existing sets:', checkError)
       return { success: false, error: checkError.message }
     }
     
@@ -275,7 +263,6 @@ export async function logExerciseSets(data: LogSetData) {
         .eq('exercise_id', exerciseId)
       
       if (deleteError) {
-        console.error('Error deleting existing sets:', deleteError)
         return { success: false, error: deleteError.message }
       }
     }
@@ -295,14 +282,12 @@ export async function logExerciseSets(data: LogSetData) {
       .select()
     
     if (insertError) {
-      console.error('Error inserting sets:', insertError)
       return { success: false, error: insertError.message }
     }
     
     revalidatePath('/workout')
     return { success: true, data: insertedSets }
   } catch (error) {
-    console.error('Error in logExerciseSets:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -346,14 +331,12 @@ export async function updateExerciseDetails(data: UpdateExerciseData) {
       .single()
     
     if (error) {
-      console.error('Error updating exercise:', error)
       return { success: false, error: error.message }
     }
     
     revalidatePath('/workout')
     return { success: true, data: updatedExercise }
   } catch (error) {
-    console.error('Error in updateExerciseDetails:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -405,7 +388,6 @@ export async function modifyWorkoutSession(data: ModifyWorkoutSessionData) {
       } 
     }
   } catch (error) {
-    console.error('Error in modifyWorkoutSession:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }
@@ -433,7 +415,6 @@ export async function modifySet(data: ModifySetData) {
       .single()
     
     if (setError || !setData) {
-      console.error('Error finding set:', setError)
       return { success: false, error: 'Set not found' }
     }
     
@@ -445,7 +426,6 @@ export async function modifySet(data: ModifySetData) {
       .single()
     
     if (sessionError || !session) {
-      console.error('Error finding session:', sessionError)
       return { success: false, error: 'Session not found' }
     }
     
@@ -466,7 +446,6 @@ export async function modifySet(data: ModifySetData) {
       .single()
     
     if (updateError) {
-      console.error('Error updating set:', updateError)
       return { success: false, error: 'Failed to update set' }
     }
     
@@ -476,7 +455,6 @@ export async function modifySet(data: ModifySetData) {
     
     return { success: true, data: updatedSet }
   } catch (error) {
-    console.error('Error in modifySet:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred while updating the set'
@@ -498,7 +476,6 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       .single()
     
     if (exerciseError || !exercise) {
-      console.error('Error finding exercise:', exerciseError)
       return { success: false, error: 'Exercise not found' }
     }
     
@@ -509,7 +486,6 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       .single()
     
     if (splitDayError || !splitDay) {
-      console.error('Error finding split day:', splitDayError)
       return { success: false, error: 'Split day not found' }
     }
     
@@ -520,7 +496,6 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       .single()
     
     if (splitError || !split) {
-      console.error('Error finding split:', splitError)
       return { success: false, error: 'Split not found' }
     }
     
@@ -537,7 +512,6 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       .order('sessions(created_at)', { ascending: false })
       
     if (joinError) {
-      console.error('Error fetching sessions with sets:', joinError)
       return { success: false, error: joinError.message }
     }
     
@@ -569,7 +543,6 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       }
     }
   } catch (error) {
-    console.error('Error in getExerciseSets:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred'
@@ -620,9 +593,7 @@ function normalizeMuscleGroup(muscleGroup: string | string[] | null): string {
         return parsed[0].toLowerCase();
       }
       return (parsed?.toString() || 'NA').toLowerCase();
-    } catch (e) {
-      // Not valid JSON, treat as a single string
-      console.error('Error parsing muscle group:', e);
+    } catch {
       return muscleGroup.toLowerCase();
     }
   }
@@ -654,7 +625,6 @@ export async function getRecentWorkouts(limit: number = 3) {
       .limit(limit)
 
     if (sessionsError) {
-      console.error('Error fetching recent sessions:', sessionsError)
       return { success: false, error: sessionsError.message }
     }
     
@@ -687,7 +657,6 @@ export async function getRecentWorkouts(limit: number = 3) {
         .single()
 
       if (splitDayError || !splitDay) {
-        console.error('Error fetching split day for session:', splitDayError)
         continue
       }
       
@@ -699,7 +668,6 @@ export async function getRecentWorkouts(limit: number = 3) {
         .single()
         
       if (splitError) {
-        console.error('Error fetching split:', splitError)
         continue
       }
 
@@ -711,7 +679,6 @@ export async function getRecentWorkouts(limit: number = 3) {
         .order('exercise_order', { ascending: true })
 
       if (exercisesError) {
-        console.error('Error fetching exercises:', exercisesError)
         continue
       }
 
@@ -774,7 +741,6 @@ export async function getRecentWorkouts(limit: number = 3) {
 
     return { success: true, data: { workouts, summary } }
   } catch (error) {
-    console.error('Error in getRecentWorkouts:', error)
     return { success: false, error: error instanceof Error ? error.message : 'An error occurred' }
   }
 }

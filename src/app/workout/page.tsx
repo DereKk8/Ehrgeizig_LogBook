@@ -190,8 +190,7 @@ export default function WorkoutPage() {
       setSessionId(sessionResult.data.id)
       // Move to the log sets step
       nextStep()
-    } catch (error) {
-      console.error('Error starting workout:', error)
+    } catch {
       setError('Failed to start workout session')
     } finally {
       setLoading(false)

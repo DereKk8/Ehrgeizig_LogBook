@@ -264,12 +264,12 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
     // Update completed days state based on check result
     if (isComplete) {
       if (!completedDays.includes(dayIndex)) {
-        console.log(`Day ${dayIndex} (${DAYS[dayIndex]}) marked as complete`);
+
         setCompletedDays(prev => [...prev, dayIndex]);
       }
     } else {
       if (completedDays.includes(dayIndex)) {
-        console.log(`Day ${dayIndex} (${DAYS[dayIndex]}) marked as incomplete`);
+
         setCompletedDays(prev => prev.filter(d => d !== dayIndex));
       }
     }
@@ -304,12 +304,7 @@ export default function ExerciseDetailsStep({ onAllDaysConfigured }: Props) {
       }
     }
     
-    console.log('Training day configuration status:', {
-      trainingDayIndices,
-      completedDays,
-      allConfigured
-    });
-    
+
     if (onAllDaysConfigured) {
       onAllDaysConfigured(allConfigured);
     }
