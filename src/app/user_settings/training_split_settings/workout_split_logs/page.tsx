@@ -70,8 +70,7 @@ export default function WorkoutSplitLogsPage() {
         }
         
         setSplits(result.data || [])
-      } catch (err) {
-        console.error('Error fetching splits:', err)
+      } catch {
         setError('An error occurred while loading your splits')
       } finally {
         setLoading(false)
@@ -97,8 +96,7 @@ export default function WorkoutSplitLogsPage() {
       
       setSplitDays(result.data || [])
       setViewState('days')
-    } catch (err) {
-      console.error('Error fetching split days:', err)
+    } catch {
       setError('An error occurred while loading workout days')
     } finally {
       setLoading(false)
@@ -121,8 +119,7 @@ export default function WorkoutSplitLogsPage() {
       
       setExercises(result.data || [])
       setViewState('exercises')
-    } catch (err) {
-      console.error('Error fetching exercises:', err)
+    } catch {
       setError('An error occurred while loading exercises')
     } finally {
       setLoading(false)
@@ -140,7 +137,7 @@ export default function WorkoutSplitLogsPage() {
     try {
       const result = await getExerciseSets(exercise.id, user.id)
 
-      console.log(result)
+
       
       if (!result.success) {
         setError(result.error || 'Failed to load exercise sets')
@@ -149,8 +146,7 @@ export default function WorkoutSplitLogsPage() {
       
       setExerciseSets(result.data as ExerciseSetsData)
       setViewState('sets')
-    } catch (err) {
-      console.error('Error fetching exercise sets:', err)
+    } catch {
       setError('An error occurred while loading exercise sets')
     } finally {
       setLoading(false)
@@ -236,8 +232,7 @@ export default function WorkoutSplitLogsPage() {
       
       setToast({ type: 'success', message: 'Set updated successfully' })
       setEditingSetId(null)
-    } catch (err) {
-      console.error('Error updating set:', err)
+    } catch {
       setToast({ type: 'error', message: 'An error occurred while updating the set' })
     } finally {
       setIsSaving(false)
@@ -286,8 +281,7 @@ export default function WorkoutSplitLogsPage() {
       
       // Clear confirmation dialog
       setDeleteConfirmation(null)
-    } catch (err) {
-      console.error('Error deleting exercise:', err)
+    } catch {
       setToast({ 
         type: 'error', 
         message: 'An error occurred while deleting the exercise' 

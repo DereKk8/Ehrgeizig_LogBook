@@ -26,8 +26,7 @@ export default function TrainingSplitSettingsPage() {
           // Make sure we're handling possible undefined data
           setSplits(result.data || [])
         }
-      } catch (error) {
-        console.error('Error in fetchSplits:', error)
+      } catch {
         setError('An error occurred while loading your splits')
         setSplits([])
       } finally {

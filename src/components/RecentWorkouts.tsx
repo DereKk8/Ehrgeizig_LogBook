@@ -63,8 +63,7 @@ function formatDate(dateStr: string): string {
     
     // Otherwise return formatted date
     return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date)
-  } catch (e) {
-    console.log('Error formatting date:', e)
+  } catch {
     return 'Invalid date'
   }
 }
@@ -115,8 +114,7 @@ export function RecentWorkouts() {
         } else {
           setError(result.error || 'Failed to fetch workouts')
         }
-      } catch (err) {
-        console.error('Error fetching recent workouts:', err)
+      } catch {
         setError('An error occurred while fetching workout data')
       } finally {
         setLoading(false)

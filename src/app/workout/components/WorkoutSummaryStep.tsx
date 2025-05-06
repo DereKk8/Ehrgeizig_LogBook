@@ -42,7 +42,6 @@ export default function WorkoutSummaryStep({
         const splitDaysResult = await getSplitDays(splitId)
         
         if (!splitDaysResult.success) {
-          console.error('Error fetching split days:', splitDaysResult.error)
           setError(`Failed to load workout days: ${splitDaysResult.error}`)
           setLoading(false)
           return
@@ -56,32 +55,25 @@ export default function WorkoutSummaryStep({
         const selectedDay = trainingDays.find(day => day.day_of_week === selectedDayIndex)
         
         if (!selectedDay) {
-          console.log('No day found with index:', selectedDayIndex)
           setLoading(false)
           return
         }
         
         // Step 3: Fetch exercises with sets for the selected day
-        console.log(`Fetching exercises for day ${selectedDay.name} (ID: ${selectedDay.id})`)
         const exercisesResult = await loadWorkoutWithPrefilledSets(selectedDay.id)
         
         if (!exercisesResult.success) {
-          console.error('Error loading workout with prefilled sets:', exercisesResult.error)
           setError(`Failed to load exercises: ${exercisesResult.error}`)
           setLoading(false)
           return
         }
         
-        console.log('Successfully loaded exercises with sets:', exercisesResult.data)
-        
         if (exercisesResult.data && exercisesResult.data.length > 0) {
           // Update the exercises with the ones that have prefilled sets
           setWorkoutExercises(exercisesResult.data)
         } else {
-          console.log('No exercises found for this day')
         }
-      } catch (error) {
-        console.error('Error fetching data:', error)
+      } catch {
         setError('Failed to load workout data')
       } finally {
         setLoading(false)
@@ -102,10 +94,8 @@ export default function WorkoutSummaryStep({
     setError(null)
     
     try {
-      console.log(`Changing workout day to ${day.name} (day_of_week: ${day.day_of_week})`)
       onDayChanged(day.id, day.name, day.day_of_week)
-    } catch (error) {
-      console.error('Error changing day:', error)
+    } catch {
       setError('Failed to change workout day')
     } finally {
       setDayDropdownOpen(false)

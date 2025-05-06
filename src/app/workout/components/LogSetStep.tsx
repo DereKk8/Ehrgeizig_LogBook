@@ -167,8 +167,7 @@ export default function LogSetStep({
       
       // Clear toast after 1.5 seconds
       setTimeout(() => setToast(null), 1500)
-    } catch (error) {
-      console.error('Error updating exercise:', error)
+    } catch {
       setError('An error occurred while updating the exercise')
       
       setToast({
@@ -289,8 +288,7 @@ export default function LogSetStep({
         }, 1500)
       }
       
-    } catch (error) {
-      console.error('Error logging sets:', error)
+    } catch {
       setError('An error occurred while logging sets')
     } finally {
       setIsSaving(false)

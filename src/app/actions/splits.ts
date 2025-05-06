@@ -42,7 +42,6 @@ export async function getSplitById(splitId: string, userId: string) {
       .single()
     
     if (splitError) {
-      console.error('Error fetching split:', splitError)
       return { 
         success: false, 
         error: 'Split not found or access denied' 
@@ -57,7 +56,6 @@ export async function getSplitById(splitId: string, userId: string) {
       .order('day_of_week', { ascending: true })
     
     if (splitDaysError) {
-      console.error('Error fetching split days:', splitDaysError)
       return { 
         success: false, 
         error: 'Failed to load split days' 
@@ -123,7 +121,6 @@ export async function getSplitById(splitId: string, userId: string) {
         .order('exercise_order', { ascending: true })
       
       if (exercisesError) {
-        console.error('Error fetching exercises:', exercisesError)
         return { 
           success: false, 
           error: `Failed to load exercises for ${splitDay.name}` 
@@ -139,7 +136,6 @@ export async function getSplitById(splitId: string, userId: string) {
         .limit(1)
       
       if (sessionsError) {
-        console.error('Error fetching sessions:', sessionsError)
         return { 
           success: false, 
           error: `Failed to load session data for ${splitDay.name}` 
@@ -173,7 +169,6 @@ export async function getSplitById(splitId: string, userId: string) {
             .order('set_number', { ascending: true })
           
           if (setsError) {
-            console.error('Error fetching sets:', setsError)
             // Continue without sets data rather than failing entirely
           } else if (sets.length > 0) {
             // Map sets to the format expected by the form
@@ -202,7 +197,6 @@ export async function getSplitById(splitId: string, userId: string) {
     
     return { success: true, data: formData }
   } catch (error) {
-    console.error('Error in getSplitById:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred while loading the split'
@@ -223,7 +217,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
       .single()
     
     if (splitVerifyError || !existingSplit) {
-      console.error('Error verifying split ownership:', splitVerifyError)
       throw new Error('Split not found or access denied')
     }
     
@@ -234,7 +227,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
       .eq('id', splitId)
     
     if (splitUpdateError) {
-      console.error('Error updating split:', splitUpdateError)
       throw new Error(`Failed to update split: ${splitUpdateError.message}`)
     }
     
@@ -245,7 +237,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
       .eq('split_id', splitId)
     
     if (splitDaysError) {
-      console.error('Error fetching existing split days:', splitDaysError)
       throw new Error(`Failed to load existing split days: ${splitDaysError.message}`)
     }
     
@@ -266,7 +257,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
           .eq('id', existingSplitDay.id)
         
         if (splitDayUpdateError) {
-          console.error('Error updating split day:', splitDayUpdateError)
           throw new Error(`Failed to update split day: ${splitDayUpdateError.message}`)
         }
         
@@ -279,7 +269,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
             .eq('split_day_id', existingSplitDay.id)
           
           if (exercisesError) {
-            console.error('Error fetching existing exercises:', exercisesError)
             throw new Error(`Failed to load existing exercises: ${exercisesError.message}`)
           }
           
@@ -295,7 +284,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
             .single()
           
           if (sessionError) {
-            console.error('Error creating session:', sessionError)
             throw new Error(`Failed to create session: ${sessionError.message}`)
           }
           
@@ -311,7 +299,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
                 .eq('exercise_id', exerciseId)
               
               if (deleteSetError) {
-                console.error('Error deleting exercise sets:', deleteSetError)
                 // Continue without failing, as this won't affect creating new sets
               }
             }
@@ -323,7 +310,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
               .in('id', existingExerciseIds)
             
             if (deleteExerciseError) {
-              console.error('Error deleting exercises:', deleteExerciseError)
               throw new Error(`Failed to delete existing exercises: ${deleteExerciseError.message}`)
             }
           }
@@ -347,7 +333,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
               .single()
             
             if (exerciseError) {
-              console.error('Error creating exercise:', exerciseError)
               throw new Error(`Failed to create exercise: ${exerciseError.message}`)
             }
             
@@ -365,7 +350,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
                 })
               
               if (setError) {
-                console.error('Error creating exercise set:', setError)
                 throw new Error(`Failed to create exercise set: ${setError.message}`)
               }
             }
@@ -385,7 +369,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
           .single()
         
         if (splitDayError) {
-          console.error('Error creating split day:', splitDayError)
           throw new Error(`Failed to create split day: ${splitDayError.message}`)
         }
         
@@ -403,7 +386,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
             .single()
           
           if (sessionError) {
-            console.error('Error creating session:', sessionError)
             throw new Error(`Failed to create session: ${sessionError.message}`)
           }
           
@@ -426,7 +408,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
               .single()
             
             if (exerciseError) {
-              console.error('Error creating exercise:', exerciseError)
               throw new Error(`Failed to create exercise: ${exerciseError.message}`)
             }
             
@@ -444,7 +425,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
                 })
               
               if (setError) {
-                console.error('Error creating exercise set:', setError)
                 throw new Error(`Failed to create exercise set: ${setError.message}`)
               }
             }
@@ -456,7 +436,6 @@ export async function updateSplit(data: FormData, userId: string, splitId: strin
     revalidatePath('/user_settings/training_split_settings')
     return { success: true }
   } catch (error) {
-    console.error('Error in updateSplit:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred while updating the split'
@@ -479,15 +458,12 @@ export async function createSplit(data: FormData, userId: string) {
       .single()
 
     if (splitError) {
-      console.error('Error creating split:', splitError)
       throw new Error(`Failed to create split: ${splitError.message}`)
     }
 
     if (!split) {
       throw new Error('Split was not created')
     }
-
-    console.log('Created split:', split)
 
     // Create split days and exercises
     for (let dayIndex = 0; dayIndex < data.days.length; dayIndex++) {
@@ -506,7 +482,6 @@ export async function createSplit(data: FormData, userId: string) {
         .single()
 
       if (splitDayError) {
-        console.error('Error creating split day:', splitDayError)
         throw new Error(`Failed to create split day: ${splitDayError.message}`)
       }
 
@@ -528,15 +503,12 @@ export async function createSplit(data: FormData, userId: string) {
           .single()
 
         if (sessionError) {
-          console.error('Error creating session:', sessionError)
           throw new Error(`Failed to create session: ${sessionError.message}`)
         }
 
         if (!session) {
           throw new Error('Session was not created')
         }
-
-        console.log(`Created session for ${day.workoutName}:`, session)
 
         // Create exercises for this day with proper ordering
         for (let exerciseIndex = 0; exerciseIndex < day.exercises.length; exerciseIndex++) {
@@ -558,7 +530,6 @@ export async function createSplit(data: FormData, userId: string) {
             .single()
 
           if (exerciseError) {
-            console.error('Error creating exercise:', exerciseError)
             throw new Error(`Failed to create exercise: ${exerciseError.message}`)
           }
 
@@ -580,12 +551,9 @@ export async function createSplit(data: FormData, userId: string) {
               })
 
             if (setError) {
-              console.error('Error creating exercise set:', setError)
               throw new Error(`Failed to create exercise set: ${setError.message}`)
             }
           }
-          
-          console.log(`Created ${exercise.setsData.length} sets for exercise: ${exercise.name}`)
         }
       }
     }
@@ -593,7 +561,6 @@ export async function createSplit(data: FormData, userId: string) {
     revalidatePath('/user_settings/training_split_settings')
     return { success: true }
   } catch (error) {
-    console.error('Error in createSplit:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred while creating the split'
@@ -615,7 +582,6 @@ export async function deleteExercise(exerciseId: string, userId: string) {
       .single()
     
     if (exerciseError || !exercise) {
-      console.error('Error finding exercise:', exerciseError)
       return { success: false, error: 'Exercise not found' }
     }
     
@@ -626,7 +592,6 @@ export async function deleteExercise(exerciseId: string, userId: string) {
       .single()
     
     if (splitDayError || !splitDay) {
-      console.error('Error finding split day:', splitDayError)
       return { success: false, error: 'Split day not found' }
     }
     
@@ -637,7 +602,6 @@ export async function deleteExercise(exerciseId: string, userId: string) {
       .single()
     
     if (splitError || !split) {
-      console.error('Error finding split:', splitError)
       return { success: false, error: 'Split not found' }
     }
     
@@ -653,7 +617,6 @@ export async function deleteExercise(exerciseId: string, userId: string) {
       .eq('id', exerciseId)
     
     if (exerciseDeleteError) {
-      console.error('Error deleting exercise:', exerciseDeleteError)
       return { success: false, error: 'Failed to delete exercise' }
     }
     
@@ -664,7 +627,6 @@ export async function deleteExercise(exerciseId: string, userId: string) {
     
     return { success: true }
   } catch (error) {
-    console.error('Error in deleteExercise:', error)
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'An error occurred while deleting the exercise'
