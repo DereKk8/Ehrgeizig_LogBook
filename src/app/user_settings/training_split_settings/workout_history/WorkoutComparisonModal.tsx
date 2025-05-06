@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, parseISO } from 'date-fns'
-import { X, ArrowUpRight, ArrowDownRight, ArrowRight, Dumbbell, Calendar, TrendingUp } from 'lucide-react'
+import { X, ArrowUpRight, ArrowDownRight, ArrowRight, Dumbbell, Calendar, TrendingUp} from 'lucide-react'
 import { getPreviousWorkoutInstance, WorkoutComparison, ExerciseProgressData, SetProgressData } from '@/app/actions/workout-history'
 
 interface WorkoutComparisonModalProps {
@@ -90,7 +90,7 @@ export default function WorkoutComparisonModal({ workoutId, isOpen, onClose }: W
             className="p-1 rounded-full hover:bg-[#353535]"
             aria-label="Close"
           >
-            <X className="h-6 w-6 text-gray-400" />
+            <X className="h-6 w-6 text-[#FF5733]" />
           </button>
         </div>
 
@@ -109,43 +109,86 @@ export default function WorkoutComparisonModal({ workoutId, isOpen, onClose }: W
               {/* Workout Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-[#252525] border border-[#404040] p-4 rounded-lg">
-                  <h3 className="font-medium text-[#FF5733] mb-2 flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                  <h3 className="font-medium text-[#FF5733] mb-4 flex items-center">
+                    <Calendar className="h-5 w-5 mr-2" />
                     Current Workout
                   </h3>
                   {comparison.currentWorkout && (
-                    <div>
-                      <p className="text-sm text-gray-700">
-                        <span className="font-medium">{comparison.currentWorkout.splitName}:</span> {comparison.currentWorkout.dayName}
-                      </p>
-                      <p className="text-sm text-gray-700">{formatDate(comparison.currentWorkout.date)}</p>
-                      <p className="text-sm text-gray-700 mt-1">
-                        {comparison.currentWorkout.totalSets} sets across {comparison.currentWorkout.exercises.length} exercises
-                      </p>
+                    <div className="space-y-3">
+                      <div className="bg-[#2a2a2a] p-3 rounded-md border border-[#3a3a3a] flex items-center">
+                        <div className="bg-[#FF5733] rounded-full p-1.5 mr-3">
+                          <Dumbbell className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-white font-medium">{comparison.currentWorkout.splitName}: {comparison.currentWorkout.dayName}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-[#2a2a2a] p-3 rounded-md border border-[#3a3a3a] flex items-center">
+                        <div className="bg-[#3a3a3a] rounded-full p-1.5 mr-3">
+                          <Calendar className="h-4 w-4 text-[#FF5733]" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-white">{formatDate(comparison.currentWorkout.date)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-[#2a2a2a] p-3 rounded-md border border-[#3a3a3a] flex items-center">
+                        <div className="bg-[#3a3a3a] rounded-full p-1.5 mr-3">
+                          <TrendingUp className="h-4 w-4 text-[#FF5733]" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-white">{comparison.currentWorkout.totalSets} sets across {comparison.currentWorkout.exercises.length} exercises</p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {comparison.previousWorkout ? (
                   <div className="bg-[#2a2a2a] border border-[#404040] p-4 rounded-lg">
-                    <h3 className="font-medium text-gray-300 mb-2 flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
+                    <h3 className="font-medium text-blue-400 mb-4 flex items-center">
+                      <Calendar className="h-5 w-5 mr-2" />
                       Previous Workout
                     </h3>
-                    <div>
-                      <p className="text-sm text-gray-700">
-                        <span className="font-medium">{comparison.previousWorkout.splitName}:</span> {comparison.previousWorkout.dayName}
-                      </p>
-                      <p className="text-sm text-gray-700">{formatDate(comparison.previousWorkout.date)}</p>
-                      <p className="text-sm text-gray-700 mt-1">
-                        {comparison.previousWorkout.totalSets} sets across {comparison.previousWorkout.exercises.length} exercises
-                      </p>
+                    <div className="space-y-3">
+                      <div className="bg-[#252525] p-3 rounded-md border border-[#3a3a3a] flex items-center">
+                        <div className="bg-blue-500 rounded-full p-1.5 mr-3">
+                          <Dumbbell className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-white font-medium">{comparison.previousWorkout.splitName}: {comparison.previousWorkout.dayName}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-[#252525] p-3 rounded-md border border-[#3a3a3a] flex items-center">
+                        <div className="bg-[#3a3a3a] rounded-full p-1.5 mr-3">
+                          <Calendar className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-white">{formatDate(comparison.previousWorkout.date)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-[#252525] p-3 rounded-md border border-[#3a3a3a] flex items-center">
+                        <div className="bg-[#3a3a3a] rounded-full p-1.5 mr-3">
+                          <TrendingUp className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-white">{comparison.previousWorkout.totalSets} sets across {comparison.previousWorkout.exercises.length} exercises</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="bg-[#2a2a2a] border border-[#404040] p-4 rounded-lg">
-                    <h3 className="font-medium text-gray-300 mb-2">Previous Workout</h3>
-                    <p className="text-sm text-gray-500">No previous workout data available for comparison</p>
+                    <h3 className="font-medium text-blue-400 mb-4 flex items-center">
+                      <Calendar className="h-5 w-5 mr-2" />
+                      Previous Workout
+                    </h3>
+                    <div className="bg-[#252525] p-4 rounded-md border border-[#3a3a3a] flex items-center justify-center">
+                      <p className="text-sm text-gray-400">No previous workout data available for comparison</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -200,55 +243,61 @@ export default function WorkoutComparisonModal({ workoutId, isOpen, onClose }: W
 
               {/* Exercise Comparisons */}
               {comparison.progressData && comparison.progressData.exercises.map((exerciseProgress: ExerciseProgressData) => (
-                <div key={exerciseProgress.exerciseId} className="border border-[#404040] rounded-lg overflow-hidden bg-[#252525]">
-                  <div className="bg-[#2a2a2a] p-3 border-b border-[#404040]">
-                    <h3 className="font-medium text-white">{exerciseProgress.exerciseName}</h3>
-                    <div className="flex items-center mt-1 text-sm">
-                      <span className={`flex items-center mr-4 ${getColorClass(exerciseProgress.totalWeightChangePercent)}`}>
-                        {renderProgressIndicator(exerciseProgress.totalWeightChangePercent)}
-                        <span className="ml-1">Weight: {formatPercentage(exerciseProgress.totalWeightChangePercent)}</span>
-                      </span>
-                      <span className={`flex items-center ${getColorClass(exerciseProgress.totalRepsChangePercent)}`}>
-                        {renderProgressIndicator(exerciseProgress.totalRepsChangePercent)}
-                        <span className="ml-1">Reps: {formatPercentage(exerciseProgress.totalRepsChangePercent)}</span>
-                      </span>
+                <div key={exerciseProgress.exerciseId} className="border border-[#404040] rounded-lg overflow-hidden bg-[#252525] mb-6">
+                  <div className="bg-gradient-to-r from-[#252525] via-[#2a2a2a] to-[#252525] p-5 border-b border-[#404040]">
+                    <div className="bg-gradient-to-r from-[#FF5733]/10 via-[#FF5733]/20 to-[#FF5733]/10 p-3 rounded-lg shadow-md">
+                      <h3 className="font-medium text-[#FF5733] text-lg text-center">{exerciseProgress.exerciseName}</h3>
+                    </div>
+                    <div className="flex flex-wrap items-center mt-2 gap-3">
+                      <div className="bg-[#252525] px-3 py-2 rounded-md border border-[#3a3a3a]">
+                        <span className={`flex items-center ${getColorClass(exerciseProgress.totalWeightChangePercent)}`}>
+                          {renderProgressIndicator(exerciseProgress.totalWeightChangePercent)}
+                          <span className="ml-1 font-medium">Weight: {formatPercentage(exerciseProgress.totalWeightChangePercent)}</span>
+                        </span>
+                      </div>
+                      <div className="bg-[#252525] px-3 py-2 rounded-md border border-[#3a3a3a]">
+                        <span className={`flex items-center ${getColorClass(exerciseProgress.totalRepsChangePercent)}`}>
+                          {renderProgressIndicator(exerciseProgress.totalRepsChangePercent)}
+                          <span className="ml-1 font-medium">Reps: {formatPercentage(exerciseProgress.totalRepsChangePercent)}</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-[#404040]">
-                      <thead className="bg-[#2a2a2a]">
+                      <thead className="bg-gradient-to-r from-[#2a2a2a] to-[#323232]">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Set</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Current Weight</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Previous Weight</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Weight Change</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Current Reps</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Previous Reps</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Reps Change</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider bg-[#323232]">Set</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider bg-[#2d2d2d]">Current Weight</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider bg-[#2d2d2d]">Previous Weight</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider bg-[#2d2d2d]">Weight Change</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider bg-[#2d2d2d]">Current Reps</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider bg-[#2d2d2d]">Previous Reps</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-white uppercase tracking-wider bg-[#2d2d2d]">Reps Change</th>
                         </tr>
                       </thead>
                       <tbody className="bg-[#252525] divide-y divide-[#404040]">
                         {exerciseProgress.sets.map((setProgress: SetProgressData) => (
                           <tr key={setProgress.setNumber}>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{setProgress.setNumber}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{setProgress.currentWeight} kg</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{setProgress.previousWeight} kg</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-white bg-[#323232]">{setProgress.setNumber}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-[#FF5733] bg-[#404040]">{setProgress.currentWeight} kg</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-[#b3b3b3] bg-[#404040]">{setProgress.previousWeight} kg</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm bg-[#404040]">
                               <span className={`flex items-center ${getColorClass(setProgress.weightChangePercent)}`}>
                                 {renderProgressIndicator(setProgress.weightChangePercent)}
-                                <span className="ml-1">
+                                <span className="ml-1 font-medium">
                                   {setProgress.weightChange > 0 ? '+' : ''}{setProgress.weightChange} kg
                                   <span className="text-xs ml-1">({formatPercentage(setProgress.weightChangePercent)})</span>
                                 </span>
                               </span>
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{setProgress.currentReps}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{setProgress.previousReps}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-[#FF5733] bg-[#404040]">{setProgress.currentReps}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-[#b3b3b3] bg-[#404040]">{setProgress.previousReps}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm bg-[#404040]">
                               <span className={`flex items-center ${getColorClass(setProgress.repsChangePercent)}`}>
                                 {renderProgressIndicator(setProgress.repsChangePercent)}
-                                <span className="ml-1">
+                                <span className="ml-1 font-medium">
                                   {setProgress.repsChange > 0 ? '+' : ''}{setProgress.repsChange}
                                   <span className="text-xs ml-1">({formatPercentage(setProgress.repsChangePercent)})</span>
                                 </span>
@@ -264,10 +313,12 @@ export default function WorkoutComparisonModal({ workoutId, isOpen, onClose }: W
 
               {/* No Previous Workout Message */}
               {!comparison.previousWorkout && (
-                <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-center">
-                  <p className="text-yellow-800">
-                    This is your first time doing this workout. Complete more workouts to see progress comparisons.
-                  </p>
+                <div className="bg-[#252525] border border-[#404040] rounded-lg p-5 text-center mt-6">
+                  <div className="bg-gradient-to-r from-[#FF5733]/5 via-[#FF5733]/15 to-[#FF5733]/5 p-4 rounded-lg shadow-md">
+                    <p className="text-[#FF5733] flex items-center justify-center font-medium">
+                      This is your first time doing this workout. Complete more workouts to see progress comparisons.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -278,7 +329,7 @@ export default function WorkoutComparisonModal({ workoutId, isOpen, onClose }: W
         <div className="border-t p-4 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 bg-[#FF5733] text-white rounded hover:bg-[#E64A2E] transition-colors font-medium"
           >
             Close
           </button>
