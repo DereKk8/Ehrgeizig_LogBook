@@ -32,20 +32,32 @@ const muscleColors: Record<string, {light: string, main: string, dark: string}> 
 function formatDate(dateStr: string): string {
   // Ensure we have a valid date string
   if (!dateStr) return 'Unknown date';
-  
-  try {
+  const formattedDate = dateStr.concat('T00:00:00')
+
+  try { 
+    // Create date objects and normalize them to local timezone
     const today = new Date()
-    const date = new Date(dateStr)
+    // Parse the date string and ensure it's treated as local time
+    // This fixes the timezone issue where dates were being offset
+    const date = new Date(formattedDate)
     
-    // Check if it's today
-    if (date.toDateString() === today.toDateString()) {
+    // Normalize both dates to remove time component for accurate day comparison
+    const todayStr = today.toLocaleDateString()
+    const formattedDateStr = date.toLocaleDateString()
+    
+    // Create new Date objects from the normalized strings to ensure proper comparison
+    const normalizedToday = new Date(todayStr)
+    const normalizedDate = new Date(formattedDateStr)
+    
+    // Check if it's today by comparing normalized dates
+    if (normalizedDate.getTime() === normalizedToday.getTime()) {
       return 'Today'
     }
     
     // Check if it's yesterday
-    const yesterday = new Date(today)
+    const yesterday = new Date(normalizedToday)
     yesterday.setDate(yesterday.getDate() - 1)
-    if (date.toDateString() === yesterday.toDateString()) {
+    if (normalizedDate.getTime() === yesterday.getTime()) {
       return 'Yesterday'
     }
     
