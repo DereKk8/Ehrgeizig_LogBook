@@ -576,7 +576,7 @@ export interface WorkoutSummary {
 }
 
 // Function to properly normalize muscle group data
-function normalizeMuscleGroup(muscleGroup: string | string[] | null): string {
+export async function normalizeMuscleGroup(muscleGroup: string | string[] | null): Promise<string> {
   if (!muscleGroup) return 'NA';
 
   // If it's an array, return the first item
@@ -702,7 +702,7 @@ export async function getRecentWorkouts(limit: number) {
         }))
         
         // Process muscle groups to ensure proper color mapping
-        const muscleGroup = normalizeMuscleGroup(exercise.muscle_groups);
+        const muscleGroup = await normalizeMuscleGroup(exercise.muscle_groups);
         
         // Update total sets count
         totalSets += formattedSets.length
