@@ -602,7 +602,7 @@ function normalizeMuscleGroup(muscleGroup: string | string[] | null): string {
 }
 
 // Function to get recent workouts for the dashboard
-export async function getRecentWorkouts(limit: number = 3) {
+export async function getRecentWorkouts(limit: number) {
   try {
     const supabase = await createClient()
     
