@@ -78,7 +78,7 @@ export function RecentWorkouts() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const limit = 5
+  const limit = 3
   
   useEffect(() => {
     async function fetchRecentWorkouts() {

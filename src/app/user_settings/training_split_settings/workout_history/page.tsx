@@ -1,57 +1,112 @@
-import React from 'react';
-import Link from 'next/link';
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { ChevronLeft, BarChart2, History } from 'lucide-react'
+import { getWorkoutHistoryForWeek, WorkoutDetail } from '@/app/actions/workout-history'
+import WorkoutHistoryList from './WorkoutHistoryList'
+import WeekSelector from './WeekSelector'
 
 export default function WorkoutHistoryPage() {
-    return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
-            <div className="max-w-md p-8 bg-white rounded-lg shadow-lg text-center">
-                <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-24 w-24 mx-auto text-gray-400 mb-4" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                >
-                    <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth={1.5} 
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
-                    />
-                </svg>
-                
-                <h1 className="text-2xl font-bold text-gray-800 mb-3">Coming Soon!</h1>
-                
-                <p className="text-gray-600 mb-6">
-                    The Workout History feature is currently under development and will be available in a future update.
-                    We&apos;re working hard to bring you comprehensive workout tracking and analysis.
-                </p>
-                
-                <div className="bg-blue-50 p-4 rounded-md mb-6">
-                    <p className="text-sm text-blue-700">
-                        You&apos;ll soon be able to view all your past workouts, track your progress, and analyze your performance trends.
-                    </p>
-                </div>
-                
-                <Link 
-                    href="/user_settings/training_split_settings" 
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5 mr-2" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                    >
-                        <path 
-                            fillRule="evenodd" 
-                            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" 
-                            clipRule="evenodd" 
-                        />
-                    </svg>
-                    Back to Settings
-                </Link>
-            </div>
+  const [weekOffset, setWeekOffset] = useState(0)
+  const [daysPerWeek] = useState(7) // We're using a fixed value of 7 days per week
+  const [workouts, setWorkouts] = useState<WorkoutDetail[]>([])
+  const [weekRange, setWeekRange] = useState({ startDate: '', endDate: '' })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchWorkoutHistory = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const result = await getWorkoutHistoryForWeek(weekOffset, daysPerWeek)
+      
+      if (result.success && result.data) {
+        setWorkouts(result.data.workouts)
+        setWeekRange(result.data.weekRange)
+      } else {
+        setError(result.error || 'Failed to fetch workout history')
+      }
+    } catch {
+      setError('An error occurred while fetching workout data')
+    } finally {
+      setLoading(false)
+    }
+  }, [weekOffset, daysPerWeek])
+
+  useEffect(() => {
+    fetchWorkoutHistory()
+  }, [fetchWorkoutHistory])
+
+  const handleWeekChange = (newOffset: number) => {
+    setWeekOffset(newOffset)
+  }
+
+  return (
+    <div className="min-h-screen bg-[#121212] p-4 md:p-6 text-white">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <Link 
+              href="/user_settings/training_split_settings" 
+              className="inline-flex items-center bg-[#252525] hover:bg-[#323232] text-white px-4 py-2 rounded-lg border border-[#404040] transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <ChevronLeft className="h-5 w-5 mr-2 text-[#FF5733]" />
+              <span className="font-medium">Back to Settings</span>
+            </Link>
+          </div>
+          
+          <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center">
+            <History className="h-7 w-7 mr-2 text-[#FF5733]" />
+            Workout History
+          </h1>
+          
+          <p className="text-gray-400 mt-2">
+            Review your workout history and track your progress over time.
+          </p>
         </div>
-    );
+
+        {/* Week Selector */}
+        <WeekSelector 
+          weekOffset={weekOffset} 
+          onWeekChange={handleWeekChange} 
+        />
+
+        {/* Content */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF5733]"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-[#2a2a2a] border border-[#404040] p-4 rounded-lg text-center">
+            <p className="text-red-400">{error}</p>
+          </div>
+        ) : (
+          <WorkoutHistoryList 
+            workouts={workouts} 
+            weekRange={weekRange} 
+          />
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && workouts.length === 0 && (
+          <div className="bg-[#1e1e1e] border border-[#404040] rounded-lg shadow-md p-6 text-center mt-8">
+            <BarChart2 className="h-16 w-16 mx-auto text-[#505050] mb-4" />
+            <h2 className="text-xl font-semibold text-white mb-2">No Workout History</h2>
+            <p className="text-gray-400 mb-6">
+              You don&apos;t have any recorded workouts for this week. Complete a workout to start tracking your progress.
+            </p>
+            <Link 
+              href="/workout" 
+              className="inline-flex items-center px-4 py-2 bg-[#FF5733] text-white rounded-md hover:bg-[#ff8a5f] transition-colors"
+            >
+              Start a Workout
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
