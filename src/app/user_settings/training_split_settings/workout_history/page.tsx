@@ -51,10 +51,10 @@ export default function WorkoutHistoryPage() {
           <div className="flex items-center justify-between mb-2">
             <Link 
               href="/user_settings/training_split_settings" 
-              className="inline-flex items-center text-[#FF5733] hover:text-[#ff8a5f] transition-colors"
+              className="inline-flex items-center bg-[#252525] hover:bg-[#323232] text-white px-4 py-2 rounded-lg border border-[#404040] transition-all duration-200 shadow-md hover:shadow-lg"
             >
-              <ChevronLeft className="h-5 w-5 mr-1" />
-              Back to Settings
+              <ChevronLeft className="h-5 w-5 mr-2 text-[#FF5733]" />
+              <span className="font-medium">Back to Settings</span>
             </Link>
           </div>
           
