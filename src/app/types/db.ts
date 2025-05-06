@@ -70,7 +70,9 @@ export enum MuscleGroup {
   Quads = "Quads",
   Hamstrings = "Hamstrings",
   Back = "Back",
-  Shoulders = "Shoulders"
+  Shoulders = "Shoulders",
+  Core = "Core",
+  Glutes = "Glutes"
 }
 
 // All available muscle groups as an array for selection

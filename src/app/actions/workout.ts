@@ -618,10 +618,11 @@ export async function getRecentWorkouts(limit: number = 3) {
       .select(`
         id, 
         date,
+        created_at,
         split_day
       `)
       .eq('user_id', user.id)
-      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(limit)
 
     if (sessionsError) {
