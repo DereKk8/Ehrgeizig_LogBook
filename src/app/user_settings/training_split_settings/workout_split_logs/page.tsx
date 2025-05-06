@@ -139,6 +139,8 @@ export default function WorkoutSplitLogsPage() {
     
     try {
       const result = await getExerciseSets(exercise.id, user.id)
+
+      console.log(result)
       
       if (!result.success) {
         setError(result.error || 'Failed to load exercise sets')

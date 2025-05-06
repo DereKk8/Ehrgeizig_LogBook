@@ -534,7 +534,7 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       .from('sets')
       .select('*, sessions:session_id(id, created_at, date)')
       .eq('exercise_id', exerciseId)
-      .order('session_id', { ascending: false })
+      .order('sessions(created_at)', { ascending: false })
       
     if (joinError) {
       console.error('Error fetching sessions with sets:', joinError)
@@ -545,7 +545,7 @@ export async function getExerciseSets(exerciseId: string, userId: string) {
       return { success: true, data: { sets: [], lastSessionDate: null } }
     }
     
-    // Get the most recent session ID
+    // Get the most recent session ID based on date
     const mostRecentSessionId = sessionsWithSets[0].session_id
     const lastSessionDate = sessionsWithSets[0].sessions.date
     
