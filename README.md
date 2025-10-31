@@ -50,8 +50,6 @@ Ehrgeizig LogBook helps you log workouts, build and reuse custom training routin
 ---
 
 ## Screenshots
-> Replace these placeholders with real screenshots saved at `assets/` or `public/images/`.
-
 ![Profile & Routines](./assets/screenshots/profile_routines1.png)  
 !![Profile & Routines Summary](./assets/screenshots/profile_routines2.png) 
 
